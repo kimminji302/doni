@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta property="og:title" content="돈이와 함께한 모든 순간들">
+    <meta property="og:description" content="단순한 소비를 넘어, 가치 있는 순간을 기록하세요. Don't Worry, Be Happy">
+    <meta property="og:image" content="./th_01.jpg">
+    
+    <title>돈이와 함께한 모든 순간들</title>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Nanum+Pen+Script&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #F9F7F2;
+            --ink-color: #2C2C2C;
+            --sub-ink: #8D8D8D;
+            --accent: #D4A373;
+            --line-color: #E0E0E0;
+            --highlight: #FFCCBC;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        html, body {
+            width: 100%; height: 100%; margin: 0; padding: 0;
+            background-color: #F0F0F0;
+            font-family: 'Gowun Batang', serif;
+            color: var(--ink-color);
+            overflow: hidden; position: fixed; top: 0; left: 0;
+        }
+
+        .app-container {
+            background-color: var(--bg-color);
+            display: flex; flex-direction: column; position: relative;
+            width: 100%; height: 100%; 
+        }
+
+        @media (min-width: 500px) { 
+            body { display: flex; justify-content: center; align-items: center; }
+            .app-container { 
+                width: 375px; height: 812px; max-height: 90vh; 
+                border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.08); 
+            } 
+        }
+        
+        .font-eng { font-family: 'Montserrat', sans-serif; letter-spacing: 0.5px; }
+        
+        /* --- [로그인 화면] --- */
+        #login-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color); z-index: 9999;
+            display: flex; flex-direction: column; 
+            justify-content: center; align-items: center;
+            text-align: center; padding: 40px;
+        }
+        .login-logo { width: 130px; height: auto; object-fit: contain; margin-bottom: 30px; }
+        .login-title { font-size: 22px; font-weight: 700; color: #333; margin-bottom: 12px; letter-spacing: -0.5px; line-height: 1.4; }
+        .login-subtitle-eng { font-family: 'Montserrat', sans-serif; font-size: 11px; color: #AAA; letter-spacing: 4px; text-transform: uppercase; font-weight: 500; margin-bottom: 60px; }
+        
+        .btn-enter {
+            background: white; border: 1px solid rgba(0,0,0,0.08); padding: 12px 28px; 
+            border-radius: 50px; font-size: 13px; font-weight: 500; color: #555; 
+            cursor: pointer; display: flex; align-items: center; gap: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03); font-family: 'Montserrat', sans-serif; transition: all 0.2s ease;
+        }
+        .btn-enter:active { transform: scale(0.96); box-shadow: 0 2px 5px rgba(0,0,0,0.02); background: #FAFAFA; }
+
+        /* --- [메인 앱 화면] --- */
+        #main-app { display: none; flex-direction: column; width: 100%; height: 100%; }
+        .screen { display: none; flex-direction: column; height: 100%; width: 100%; overflow: hidden; }
+        .screen.active { display: flex; }
+
+        /* --- 1. 홈 화면 --- */
+        .home-layout {
+            padding: 20px 24px;
+            display: flex; flex-direction: column;
+            height: 100%;
+            justify-content: space-between;
+            padding-bottom: max(20px, env(safe-area-inset-bottom));
+        }
+        .home-header { padding-top: 20px; flex-shrink: 0; display: flex; justify-content: center; }
+        .home-date-nav { display: flex; justify-content: center; align-items: center; gap: 20px; font-size: 18px; font-weight: 600; color: var(--sub-ink); }
+        .home-center { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; }
+        
+        .speech-bubble-top {
+            position: relative; background-color: white; border: 1px solid #E0E0E0; border-radius: 20px;
+            padding: 0 18px; height: 64px; display: flex; align-items: center; justify-content: center;
+            font-size: 13px; color: #5D4037; margin: 0 auto 12px auto; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: fit-content; max-width: 90%; min-width: 220px;
+            line-height: 1.4; cursor: pointer; transition: transform 0.2s; text-align: center; word-break: keep-all;
+        }
+        .speech-bubble-top::after { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); border-width: 8px 8px 0; border-style: solid; border-color: white transparent transparent transparent; z-index: 2; }
+        .speech-bubble-top::before { content: ''; position: absolute; bottom: -9px; left: 50%; transform: translateX(-50%); border-width: 9px 9px 0; border-style: solid; border-color: #E0E0E0 transparent transparent transparent; z-index: 1; }
+        
+        .home-char-img { width: auto; height: auto; max-width: 160px; max-height: 25vh; display: block; margin: 0 auto 10px auto; border-radius: 10px; }
+        .title-section { text-align: center; flex-shrink: 0; margin-bottom: 10px; }
+        .main-title { font-size: 18px; font-weight: 700; line-height: 1.3; margin-bottom: 5px; }
+        .sub-title { font-size: 11px; color: var(--sub-ink); letter-spacing: 1px; font-family: 'Montserrat', sans-serif; font-weight: 500; }
+        .info-section { flex-shrink: 0; width: 100%; }
+        .balance-card { text-align: center; padding: 15px 0; border-top: 1px solid var(--line-color); border-bottom: 1px solid var(--line-color); margin-bottom: 15px; }
+        .balance-label { font-size: 11px; color: var(--sub-ink); margin-bottom: 5px; }
+        .balance-amount { font-size: 30px; font-weight: 400; color: var(--ink-color); }
+        .action-buttons { display: flex; flex-direction: column; gap: 10px; }
+        .btn-outline { width: 100%; padding: 12px; border: 1px solid var(--ink-color); background: transparent; color: var(--ink-color); border-radius: 50px; font-size: 13px; cursor: pointer; transition: 0.2s; text-align: center; font-family: 'Gowun Batang', serif; font-weight: 600; }
+        .btn-fill { width: 100%; padding: 12px; border: none; background: var(--ink-color); color: white; border-radius: 50px; font-size: 13px; cursor: pointer; transition: 0.2s; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.1); font-family: 'Gowun Batang', serif; }
+
+        /* --- 2. 채팅 화면 --- */
+        .chat-header { padding: 15px 20px; height: 60px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; z-index: 10; border-bottom: 1px solid var(--line-color); background: rgba(253, 251, 247, 0.95); padding-top: max(15px, env(safe-area-inset-top)); }
+        .profile-simple { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; }
+        .profile-icon-img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid #EEE; }
+        .date-floater { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); background: white; padding: 4px 14px; border-radius: 20px; font-size: 11px; z-index: 5; display: flex; gap: 15px; align-items: center; border: 1px solid var(--line-color); color: var(--sub-ink); box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .nav-arrow { cursor: pointer; padding: 0 5px; }
+        .chat-room { flex-grow: 1; overflow-y: auto; padding: 50px 20px 20px 20px; display: flex; flex-direction: column; gap: 20px; -ms-overflow-style: none; scrollbar-width: none; scroll-behavior: smooth; }
+        .date-divider { text-align: center; margin: 15px 0; position: relative; }
+        .date-divider::before { content: ''; position: absolute; left: 0; top: 50%; width: 100%; height: 1px; background: var(--line-color); z-index: 0; }
+        .date-badge { background: var(--bg-color); padding: 0 15px; color: var(--sub-ink); font-size: 12px; position: relative; z-index: 1; font-family: 'Montserrat', sans-serif; }
+        .msg-row { display: flex; width: 100%; margin-bottom: 5px; animation: fadeUp 0.4s ease-out; }
+        .msg-row.me { justify-content: flex-end; flex-direction: column; align-items: flex-end; }
+        .msg-row.doni { justify-content: flex-start; }
+        .bubble { max-width: 75%; font-size: 15px; line-height: 1.5; position: relative; }
+        .msg-row.me .bubble { text-align: right; border-bottom: 1px solid var(--accent); padding: 10px 0; }
+        .msg-row.doni .bubble { text-align: left; background: white; padding: 10px 14px; border-radius: 0 15px 15px 15px; border: 1px solid var(--line-color); box-shadow: 2px 2px 10px rgba(0,0,0,0.03); font-size: 14px; }
+        .msg-actions { font-size: 14px; color: #BBB; margin-top: 4px; display: flex; gap: 10px; justify-content: flex-end; }
+        .action-btn { cursor: pointer; transition: 0.2s; }
+        
+        .chat-btn-fill { flex: 1; padding: 10px; border: none; background: var(--ink-color); color: white; border-radius: 12px; font-family: 'Gowun Batang', serif; cursor: pointer; font-size: 13px; text-align: center; }
+        .chat-btn-outline { flex: 1; padding: 10px; border: 1px solid var(--line-color); background: white; color: var(--ink-color); border-radius: 12px; font-family: 'Gowun Batang', serif; cursor: pointer; font-size: 13px; text-align: center; }
+
+        .input-bar { background: white; padding: 15px 20px; flex-shrink: 0; display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--line-color); z-index: 20; padding-bottom: max(15px, env(safe-area-inset-bottom)); }
+        .plus-btn { font-size: 24px; color: var(--ink-color); background: none; border: none; cursor: pointer; padding: 0; }
+        .fake-input { flex-grow: 1; border-bottom: 1px solid var(--sub-ink); padding: 8px 0; font-size: 14px; color: var(--sub-ink); cursor: pointer; background: transparent; }
+
+        /* --- 3. 기록/추억 --- */
+        .chart-page { background: var(--bg-color); height: 100%; overflow-y: auto; padding: 20px; padding-top: max(25px, env(safe-area-inset-top)); }
+        .header-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; text-align: center; }
+        .page-date-nav { display: flex; justify-content: center; align-items: center; gap: 15px; background: white; padding: 8px; border-radius: 12px; border: 1px solid #EEE; margin-bottom: 15px; font-weight: 600; color: #555; font-size: 14px; }
+        .stat-message-box { text-align: center; margin-bottom: 15px; padding: 12px; background-color: #FFF; border: 1px solid #EAEAEA; border-radius: 16px; font-size: 13px; line-height: 1.4; color: #5D4037; box-shadow: 0 5px 15px rgba(0,0,0,0.02); }
+        .stat-highlight { font-weight: 700; color: var(--accent); }
+        .chart-section { margin-bottom: 15px; }
+        .chart-label { font-size: 12px; color: #888; margin-bottom: 8px; }
+        .detail-btn { width: 100%; background: white; border: 1px solid #DDD; padding: 12px; border-radius: 12px; color: #555; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; margin-top: 5px; margin-bottom: 80px; display: flex; justify-content: center; align-items: center; gap: 5px; }
+        #history-wrapper { display: none; margin-bottom: 80px; }
+
+        /* --- 4. 설정 탭 --- */
+        .setting-page { background: var(--bg-color); height: 100%; overflow-y: auto; padding: 15px 20px; padding-top: max(25px, env(safe-area-inset-top)); }
+        
+        .setting-section { background: white; border-radius: 16px; padding: 20px 15px; margin-bottom: 15px; border: 1px solid #EAEAEA; box-shadow: 0 2px 10px rgba(0,0,0,0.01); }
+        .setting-header-box { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--line-color); padding-bottom: 10px; }
+        .setting-header-box .sec-title { font-size: 14px; font-weight: 700; color: var(--ink-color); }
+        .setting-header-box .sec-total { font-family: 'Montserrat'; font-size: 18px; font-weight: 600; color: var(--ink-color); }
+        
+        .detail-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 14px; }
+        .detail-item .name { color: var(--sub-ink); flex: 1; }
+        .detail-item .amt-wrap { display: flex; align-items: center; }
+        .detail-item .amt { font-family: 'Montserrat'; font-weight: 500; color: #444; }
+        .detail-item .del-btn { color: #E57373; cursor: pointer; margin-left: 12px; font-size: 12px; background: #FFF3F3; width: 22px; height: 22px; display: flex; justify-content: center; align-items: center; border-radius: 50%; }
+        
+        .add-row { display: flex; gap: 8px; margin-top: 15px; width: 100%; align-items: center; }
+        .add-row input { 
+            flex: 1; 
+            min-width: 0; 
+            border: 1px solid #E0E0E0; 
+            border-radius: 8px; 
+            padding: 10px 8px; 
+            font-size: 13px; 
+            font-family: 'Gowun Batang'; 
+            background: #FAFAFA; 
+            outline: none; 
+            transition: 0.2s; 
+        }
+        .add-row input:focus { border-color: var(--accent); background: white; }
+        .add-row input.amt-input { font-family: 'Montserrat'; flex: 1; }
+        .add-row .btn-add { 
+            flex-shrink: 0; 
+            width: 38px; height: 38px;
+            background: var(--ink-color); color: white; border: none; border-radius: 8px; 
+            cursor: pointer; font-size: 18px; display: flex; justify-content: center; align-items: center; transition: 0.2s; 
+        }
+        .add-row .btn-add:active { transform: scale(0.95); }
+
+        .clean-input { width: 100%; padding: 4px 0; border: none; border-bottom: 1px solid var(--line-color); background: transparent; font-size: 18px; color: var(--ink-color); outline: none; font-family: 'Montserrat'; font-weight: 600; margin-bottom: 2px; transition: 0.3s; }
+        .input-label { font-size: 12px; color: var(--sub-ink); display: block; margin-top: 10px; margin-bottom: 2px; }
+        
+        .avail-display { text-align:right; font-family:'Montserrat'; font-size:24px; margin: 20px 0; padding-right: 5px; }
+        .setting-btn-group { margin-top: 10px; margin-bottom: 40px; }
+        .btn-text { display:block; background: none; border: none; color: #999; font-size: 13px; text-decoration: underline; cursor: pointer; margin: 10px auto 0 auto; width: 100%; text-align: center; font-family: 'Gowun Batang', serif; }
+
+        /* 하단 탭 */
+        .bottom-nav { background: rgba(253, 251, 247, 0.95); border-top: 1px solid var(--line-color); height: 75px; display: flex; justify-content: space-around; align-items: center; flex-shrink: 0; z-index: 30; padding-bottom: max(10px, env(safe-area-inset-bottom)); backdrop-filter: blur(5px); }
+        .nav-item { text-align: center; color: #BBB; font-size: 11px; cursor: pointer; width: 25%; transition: 0.3s; font-family: 'Montserrat', sans-serif; letter-spacing: 1px; }
+        .nav-item.active { color: var(--ink-color); font-weight: 600; }
+
+        /* 모달 (입력창 & 세팅 팝업 공통) */
+        .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 44, 44, 0.3); z-index: 50; display: none; backdrop-filter: blur(2px); }
+        .modal-sheet { position: absolute; bottom: -100%; left: 0; width: 100%; z-index: 60; background: white; border-radius: 30px 30px 0 0; padding: 30px; transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; gap: 20px; padding-bottom: max(30px, env(safe-area-inset-bottom)); }
+        .modal-active .modal-overlay { display: block; }
+        .modal-active .modal-sheet { bottom: 0; }
+        .sheet-handle { width: 40px; height: 4px; background: #EEE; border-radius: 2px; margin: 0 auto 10px auto; }
+        .tag-row { display: flex; justify-content: space-between; gap: 10px; margin: 10px 0; }
+        .tag-btn { flex: 1; padding: 10px 0; border: 1px solid var(--line-color); border-radius: 12px; text-align: center; font-size: 13px; cursor: pointer; transition: 0.2s; color: var(--sub-ink); }
+        .tag-btn.selected { border-color: var(--ink-color); color: var(--ink-color); background: #F5F5F5; font-weight: 600; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <div id="login-screen">
+            <img src="./doni.gif" class="login-logo" alt="돈이">
+            <div class="login-title">돈이와 함께한<br>모든 순간들</div>
+            <div class="login-subtitle-eng">Don't Worry, Be Happy</div>
+            <button class="btn-enter" onclick="startAppSafe()">📝 기록하러 가기</button>
+        </div>
+
+        <div id="main-app">
+            
+            <div id="screen-home" class="screen active">
+                <div class="home-layout">
+                    <div class="home-header">
+                        <div class="home-date-nav">
+                            <span class="nav-arrow" onclick="moveMonth(-1)">‹</span>
+                            <span class="disp-date font-eng" id="date-display">2026. 02</span>
+                            <span class="nav-arrow" onclick="moveMonth(1)">›</span>
+                        </div>
+                    </div>
+
+                    <div class="home-center">
+                        <div id="doni-speech-bubble" class="speech-bubble-top" onclick="changeQuote()">
+                            "오늘 너에게 꼭 해주고 싶은 말이 있어.<br>여기를 터치해서 확인해봐!"
+                        </div>
+                        <img src="./doni.gif" alt="돈이 캐릭터" class="home-char-img">
+                        <div class="title-section">
+                            <div class="main-title">돈이와 함께한<br>모든 순간들.</div>
+                            <div class="sub-title">Don't Worry, Be Happy</div>
+                        </div>
+                    </div>
+
+                    <div class="info-section">
+                        <div class="balance-card">
+                            <div class="balance-label font-eng">Current Balance</div>
+                            <div class="balance-amount font-eng" id="home-balance">0</div>
+                        </div>
+                        <div class="action-buttons">
+                            <button id="btn-goal-setting" class="btn-outline" onclick="goScreen('settings', 3)">
+                                📝 이번 달 약속 정하기
+                            </button>
+                            <button class="btn-fill" onclick="goScreen('chat', 1)">
+                                돈이와 대화하기 💬
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="screen-chat" class="screen">
+                <div class="chat-header">
+                    <div class="profile-simple">
+                        <img src="./doni_profile.gif" class="profile-icon-img" alt="돈이" onerror="this.src='./doni.gif'">
+                        <span>돈이</span>
+                    </div>
+                    <div class="font-eng" style="font-size:12px; font-weight:600;" id="header-balance">0</div>
+                </div>
+                <div class="date-floater">
+                    <span class="nav-arrow" onclick="moveMonth(-1)">‹</span>
+                    <span class="disp-date font-eng" id="chat-date-display">2026. 02</span>
+                    <span class="nav-arrow" onclick="moveMonth(1)">›</span>
+                </div>
+                <div class="chat-room" id="chat-list"></div>
+                
+                <div class="input-bar">
+                    <button class="plus-btn" onclick="openModal('new')">+</button>
+                    <div class="fake-input" onclick="openModal('new')">오늘은 어떤 일이 있었나요?</div>
+                </div>
+            </div>
+
+            <div id="screen-stats" class="screen chart-page">
+                <div class="header-title">기록 & 추억</div>
+                <div class="page-date-nav">
+                    <span class="nav-arrow" onclick="moveMonth(-1)">‹</span>
+                    <span class="disp-date font-eng" id="stats-date-display">2026. 02</span>
+                    <span class="nav-arrow" onclick="moveMonth(1)">›</span>
+                </div>
+                
+                <div id="stat-msg" class="stat-message-box">
+                    아직 기록이 없네? 우리의 추억을 채워줘! 📒
+                </div>
+
+                <div class="chart-section">
+                    <div class="chart-label">우리의 발자취</div>
+                    <div id="stat-list"></div>
+                </div>
+
+                <div class="chart-section">
+                    <div style="height:140px; position:relative; display:flex; justify-content:center;">
+                        <canvas id="yearChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="detail-btn" onclick="toggleHistory()" id="btn-detail-toggle">
+                    지출 상세 내역 보기 ▼
+                </div>
+                
+                <div id="history-wrapper">
+                    <div id="history-list"></div>
+                </div>
+            </div>
+
+            <div id="screen-settings" class="screen setting-page">
+                <div class="header-title">설정</div>
+                <div class="page-date-nav">
+                    <span class="nav-arrow" onclick="moveMonth(-1)">‹</span>
+                    <span class="disp-date font-eng" id="set-date-display">2026. 02</span>
+                    <span class="nav-arrow" onclick="moveMonth(1)">›</span>
+                </div>
+
+                <div class="setting-section">
+                    <div class="setting-header-box">
+                        <span class="sec-title">찾아온 돈이 (수입)</span>
+                        <span class="sec-total" id="disp-inc-total">0</span>
+                    </div>
+                    <div id="inc-list-container"></div>
+                    <div class="add-row">
+                        <input type="text" id="add-inc-name" placeholder="항목 (예: 월급)">
+                        <input type="text" id="add-inc-amt" class="amt-input" placeholder="금액" oninput="formatNumber(this)">
+                        <button class="btn-add" onclick="addDetail('inc')">+</button>
+                    </div>
+                </div>
+
+                <div class="setting-section">
+                    <div class="setting-header-box">
+                        <span class="sec-title">약속된 돈이들 (고정비)</span>
+                        <span class="sec-total" id="disp-fix-total">0</span>
+                    </div>
+                    <div id="fix-list-container"></div>
+                    <div class="add-row">
+                        <input type="text" id="add-fix-name" placeholder="항목 (예: 월세)">
+                        <input type="text" id="add-fix-amt" class="amt-input" placeholder="금액" oninput="formatNumber(this)">
+                        <button class="btn-add" onclick="addDetail('fix')">+</button>
+                    </div>
+                </div>
+
+                <div class="avail-display">
+                    <span style="font-size:12px; color:#999; vertical-align:middle; margin-right:10px;">AVAILABLE</span>
+                    <span id="set-avail" style="font-weight:600; color:var(--accent);">0</span>
+                </div>
+                
+                <span class="input-label" style="font-size:13px; font-weight:700; color:var(--ink-color); padding-left:15px;">이번 달 목표</span>
+                <div class="setting-section" style="padding: 10px 15px;">
+                    <input type="text" id="inp-goal" class="clean-input" style="font-family:'Gowun Batang'; font-weight:400; font-size:15px; border:none;" placeholder="목표를 적어주세요">
+                </div>
+                
+                <div class="setting-btn-group">
+                    <button class="btn-fill" onclick="saveGoal()">목표 저장하기</button>
+                    <button class="btn-text" onclick="window.logout()">처음으로</button>
+                </div>
+            </div>
+
+            <nav class="bottom-nav">
+                <div class="nav-item active" onclick="goScreen('home', 0)">HOME</div>
+                <div class="nav-item" onclick="goScreen('chat', 1)">CHAT</div>
+                <div class="nav-item" onclick="goScreen('stats', 2)">MEMORY</div>
+                <div class="nav-item" onclick="goScreen('settings', 3)">SETTING</div>
+            </nav>
+
+            <div id="input-modal" class="">
+                <div class="modal-overlay" onclick="closeModal()"></div>
+                <div class="modal-sheet" onclick="event.stopPropagation()">
+                    <div class="sheet-handle" onclick="closeModal()"></div>
+                    <div class="font-hand" style="font-size:24px; text-align:center; margin-bottom:10px;" id="modal-title">기록 남기기 ✏️</div>
+                    <input type="date" id="m-date" class="clean-input" style="text-align:center; font-family:'Montserrat'; font-size:16px;">
+                    
+                    <div class="tag-row">
+                        <div class="tag-btn" onclick="setTag('growth', this)">성장 🌱</div>
+                        <div class="tag-btn" onclick="setTag('joy', this)">행복 🥰</div>
+                        <div class="tag-btn" onclick="setTag('living', this)">생활 🏡</div>
+                        <div class="tag-btn" onclick="setTag('waste', this)">방황 🌫️</div>
+                    </div>
+                    
+                    <input type="text" id="m-hashtag" class="clean-input" placeholder="#나만의_감정 (선택)" style="font-size:14px; margin-bottom: 10px; color:var(--accent);">
+                    
+                    <input type="text" id="m-item" class="clean-input" placeholder="어디로 데려갔나요?" style="font-size:16px;">
+                    <input type="text" id="m-cost" class="clean-input" placeholder="얼마나?" oninput="formatNumber(this)" style="font-size:16px;">
+                    <button class="btn-fill" onclick="addExp()" id="modal-btn">기록하기</button>
+                </div>
+            </div>
+
+            <div id="setting-confirm-modal" class="modal-overlay" style="display:none; align-items:center; justify-content:center; z-index:999;">
+                <div style="background:white; padding:30px; border-radius:24px; text-align:center; width:80%; max-width:300px; box-shadow:0 10px 30px rgba(0,0,0,0.1); animation: fadeUp 0.3s ease-out;">
+                    <img src="./doni.gif" style="width:70px; margin-bottom:15px; border-radius:10px;">
+                    <div style="font-family:'Gowun Batang'; font-size:15px; margin-bottom:20px; line-height:1.5; color:var(--ink-color);">
+                        저번 달과 <strong>똑같이</strong><br>약속해둘까? ✨
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="chat-btn-outline" onclick="closeSetConfirm()">새로 적을래</button>
+                        <button class="chat-btn-fill" onclick="applyPrevSetFromModal()">응, 똑같아!</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        var curDate = new Date();
+        var expenses = [];
+        var settings = {};
+        var selectedTag = '';
+        var editingId = null;
+        var DB_EXP = "doni_test_exp_v2";
+        var DB_SET = "doni_test_set_v2";
+        var myChart = null;
+        var dismissedSetKeys = []; 
+
+        window.startAppSafe = function() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'flex';
+            if(document.getElementById('m-date')) document.getElementById('m-date').valueAsDate = new Date();
+            try {
+                expenses = JSON.parse(localStorage.getItem(DB_EXP) || "[]");
+                settings = JSON.parse(localStorage.getItem(DB_SET) || "{}");
+            } catch(e) { expenses = []; settings = {}; }
+            renderAll();
+        }
+
+        window.logout = function() {
+            if(confirm("처음 화면으로 돌아갈까요?")) {
+                document.getElementById('login-screen').style.display = 'flex';
+                document.getElementById('main-app').style.display = 'none';
+            }
+        }
+
+        window.goScreen = function(screenName, idx) {
+            var screens = ['home', 'chat', 'stats', 'settings'];
+            for(var i=0; i<screens.length; i++) {
+                var el = document.getElementById('screen-' + screens[i]);
+                if(screens[i] === screenName) {
+                    el.classList.add('active');
+                    el.style.display = 'flex';
+                } else {
+                    el.classList.remove('active');
+                    el.style.display = 'none';
+                }
+            }
+            var navs = document.querySelectorAll('.nav-item');
+            for(var j=0; j<navs.length; j++) {
+                if(j === idx) navs[j].classList.add('active');
+                else navs[j].classList.remove('active');
+            }
+            renderAll();
+        }
+
+        window.moveMonth = function(delta) {
+            curDate.setMonth(curDate.getMonth() + delta);
+            renderAll();
+        }
+
+        function getPrevMonthKey() {
+            let d = new Date(curDate);
+            d.setMonth(d.getMonth() - 1);
+            return d.getFullYear() + '-' + (d.getMonth() + 1);
+        }
+
+        function renderAll() {
+            var y = curDate.getFullYear();
+            var m = curDate.getMonth() + 1;
+            var key = y + '-' + m;
+            var dateStr = y + '. ' + (m < 10 ? '0'+m : m);
+
+            document.getElementById('date-display').innerText = dateStr;
+            document.getElementById('chat-date-display').innerText = dateStr;
+            document.getElementById('stats-date-display').innerText = dateStr;
+            document.getElementById('set-date-display').innerText = dateStr;
+
+            var list = expenses.filter(function(e) { return e.year == y && e.month == m; });
+            var set = settings[key] || { inc:0, fix:0, incDetails:[], fixDetails:[], goal:'' };
+
+            if(!set.incDetails) set.incDetails = [];
+            if(!set.fixDetails) set.fixDetails = [];
+            
+            var incTotal = set.incDetails.reduce((sum, item) => sum + item.amount, 0);
+            var fixTotal = set.fixDetails.reduce((sum, item) => sum + item.amount, 0);
+            
+            if(set.incDetails.length === 0 && set.inc > 0 && incTotal === 0) {
+                set.incDetails.push({id: Date.now()+'_inc', name: '기존 수입 내역', amount: set.inc});
+                incTotal = set.inc;
+            }
+            if(set.fixDetails.length === 0 && set.fix > 0 && fixTotal === 0) {
+                set.fixDetails.push({id: Date.now()+'_fix', name: '기존 고정비 내역', amount: set.fix});
+                fixTotal = set.fix;
+            }
+
+            set.inc = incTotal;
+            set.fix = fixTotal;
+            settings[key] = set; 
+
+            renderSettingsList('inc', set.incDetails);
+            renderSettingsList('fix', set.fixDetails);
+
+            var spent = 0;
+            list.forEach(function(e){ spent += Number(e.cost || 0); });
+            var remain = (incTotal - fixTotal) - spent;
+
+            document.getElementById('home-balance').innerText = remain.toLocaleString();
+            document.getElementById('header-balance').innerText = remain.toLocaleString();
+            document.getElementById('set-avail').innerText = (incTotal - fixTotal).toLocaleString();
+
+            var goalBtn = document.getElementById('btn-goal-setting');
+            if(set.goal && set.goal.trim() !== "") goalBtn.innerText = "이번 달 약속 : " + set.goal;
+            else goalBtn.innerText = "📝 이번 달 약속 정하기";
+            document.getElementById('inp-goal').value = set.goal || '';
+
+            checkSettingPopup(set, key);
+            renderChat(list, set, key);
+            renderStats(list);
+        }
+
+        function renderSettingsList(type, details) {
+            var html = '';
+            var total = 0;
+            details.forEach(function(item) {
+                html += '<div class="detail-item">';
+                html += '<span class="name">' + item.name + '</span>';
+                html += '<div class="amt-wrap"><span class="amt">' + item.amount.toLocaleString() + '</span>';
+                html += '<span class="del-btn" onclick="delDetail(\''+type+'\', \''+item.id+'\')">✕</span></div>';
+                html += '</div>';
+                total += item.amount;
+            });
+            
+            if(details.length === 0) {
+                html = '<div style="text-align:center; color:#CCC; font-size:12px; margin-bottom:10px;">등록된 내역이 없습니다.</div>';
+            }
+            
+            document.getElementById(type + '-list-container').innerHTML = html;
+            document.getElementById('disp-' + type + '-total').innerText = total.toLocaleString();
+        }
+
+        window.addDetail = function(type) {
+            var nameInput = document.getElementById('add-' + type + '-name');
+            var amtInput = document.getElementById('add-' + type + '-amt');
+            var name = nameInput.value.trim();
+            var amt = Number(amtInput.value.replace(/,/g, "") || 0);
+
+            if(!name || amt === 0) {
+                alert("항목명과 금액을 정확히 입력해주세요.");
+                return;
+            }
+
+            var key = curDate.getFullYear() + '-' + (curDate.getMonth()+1);
+            var set = settings[key] || { inc:0, fix:0, incDetails:[], fixDetails:[], goal:'' };
+            if(!set[type+'Details']) set[type+'Details'] = [];
+            
+            set[type+'Details'].push({
+                id: Date.now().toString(),
+                name: name,
+                amount: amt
+            });
+            
+            // [버그 수정] 추가 시 과거 총액 데이터 덮어쓰기 동기화
+            set[type] = set[type+'Details'].reduce(function(sum, item) { return sum + item.amount; }, 0);
+            
+            nameInput.value = '';
+            amtInput.value = '';
+            
+            settings[key] = set;
+            localStorage.setItem(DB_SET, JSON.stringify(settings));
+            renderAll();
+        }
+
+        window.delDetail = function(type, id) {
+            var key = curDate.getFullYear() + '-' + (curDate.getMonth()+1);
+            if(settings[key] && settings[key][type+'Details']) {
+                settings[key][type+'Details'] = settings[key][type+'Details'].filter(function(item) { return String(item.id) !== String(id); });
+                
+                // [버그 수정] 삭제 시 과거 총액 데이터 0원으로 확실하게 동기화!
+                settings[key][type] = settings[key][type+'Details'].reduce(function(sum, item) { return sum + item.amount; }, 0);
+                
+                localStorage.setItem(DB_SET, JSON.stringify(settings));
+                renderAll();
+            }
+        }
+
+        function checkSettingPopup(currentSet, currKey) {
+            var activeScreen = document.querySelector('.screen.active');
+            if (activeScreen && activeScreen.id === 'screen-settings') {
+                var prevKey = getPrevMonthKey();
+                var prevSet = settings[prevKey];
+                
+                var isCurrentSetEmpty = (!currentSet || (currentSet.inc === 0 && currentSet.fix === 0));
+                var isPrevSetValid = (prevSet && (prevSet.inc > 0 || prevSet.fix > 0));
+
+                if (isCurrentSetEmpty && isPrevSetValid && !dismissedSetKeys.includes(currKey)) {
+                    document.getElementById('setting-confirm-modal').style.display = 'flex';
+                } else {
+                    document.getElementById('setting-confirm-modal').style.display = 'none';
+                }
+            } else {
+                document.getElementById('setting-confirm-modal').style.display = 'none';
+            }
+        }
+
+        window.closeSetConfirm = function() {
+            var currKey = curDate.getFullYear() + '-' + (curDate.getMonth() + 1);
+            dismissedSetKeys.push(currKey); 
+            document.getElementById('setting-confirm-modal').style.display = 'none';
+        }
+
+        window.applyPrevSetFromModal = function() {
+            var currKey = curDate.getFullYear() + '-' + (curDate.getMonth() + 1);
+            dismissedSetKeys.push(currKey); 
+            document.getElementById('setting-confirm-modal').style.display = 'none';
+            applyPrevSet();
+            alert("저번 달 약속을 그대로 불러왔어요! ✨");
+        }
+
+        window.formatNumber = function(input) {
+            var val = input.value.replace(/,/g, "");
+            if(isNaN(val)) val = ""; 
+            else input.value = Number(val).toLocaleString();
+        }
+
+        window.applyPrevSet = function() {
+            var currKey = curDate.getFullYear() + '-' + (curDate.getMonth() + 1);
+            var prevKey = getPrevMonthKey();
+            var prevSet = settings[prevKey];
+            
+            if(prevSet) {
+                var newIncDetails = prevSet.incDetails ? JSON.parse(JSON.stringify(prevSet.incDetails)) : [];
+                var newFixDetails = prevSet.fixDetails ? JSON.parse(JSON.stringify(prevSet.fixDetails)) : [];
+                
+                settings[currKey] = { 
+                    inc: prevSet.inc, 
+                    fix: prevSet.fix, 
+                    incDetails: newIncDetails,
+                    fixDetails: newFixDetails,
+                    goal: '' 
+                };
+                localStorage.setItem(DB_SET, JSON.stringify(settings));
+                renderAll();
+            }
+        }
+
+        function renderChat(list, currentSet, currKey) {
+            var chatBox = document.getElementById('chat-list');
+            
+            var html = '<div class="date-divider"><span class="date-badge">START</span></div>';
+            html += '<div class="msg-row doni"><div class="bubble">오늘도 수고했어. 너를 위해 어떤 시간을 보냈어? 🙂</div></div>';
+
+            var prevKey = getPrevMonthKey();
+            var prevSet = settings[prevKey];
+            
+            var isCurrentSetEmpty = (!currentSet || (currentSet.inc === 0 && currentSet.fix === 0));
+            var isPrevSetValid = (prevSet && (prevSet.inc > 0 || prevSet.fix > 0));
+
+            if (isCurrentSetEmpty && isPrevSetValid) {
+                html += `
+                <div class="msg-row doni">
+                    <div class="bubble">
+                        새로운 달이 밝았어! ✨<br>
+                        저번 달에는 찾아온 돈이 <strong>${Number(prevSet.inc).toLocaleString()}원</strong>, 
+                        고정비가 <strong>${Number(prevSet.fix).toLocaleString()}원</strong>이었는데,<br>
+                        이번 달도 똑같이 약속해둘까?
+                        <div style="margin-top: 12px; display: flex; gap: 8px;">
+                            <button class="chat-btn-fill" onclick="applyPrevSet()">응, 똑같아!</button>
+                            <button class="chat-btn-outline" onclick="goScreen('settings', 3)">수정할래</button>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            list.sort(function(a,b){ return new Date(a.fullDate) - new Date(b.fullDate); });
+
+            list.forEach(function(e) {
+                var hashText = e.customHash ? `<span style="color:var(--accent); font-size:12px; display:block; margin-bottom:2px;">${e.customHash}</span>` : '';
+                
+                html += '<div class="msg-row me"><div class="bubble">' + hashText + '<strong>' + e.item + '</strong> ' + Number(e.cost).toLocaleString() + '</div>';
+                html += '<div class="msg-actions"><span class="action-btn" onclick="openModal(\'edit\', \''+e.id+'\')">✎</span><span class="action-btn del" onclick="delExp(\''+e.id+'\')">🗑</span></div></div>';
+                
+                var reply = "좋아!";
+                if(e.tag == 'growth') reply = "멋져! 더 성장하는 네가 보여 🌱";
+                else if(e.tag == 'joy') reply = "행복했으면 됐어! 🥰";
+                else if(e.tag == 'living') reply = "든든해! 고마워 🏡";
+                else reply = "으음.. 다음엔 더 좋은 곳으로 가자 ☁️";
+                
+                html += '<div class="msg-row doni"><div class="bubble">' + reply + '</div></div>';
+            });
+            chatBox.innerHTML = html;
+
+            setTimeout(function() {
+                if(chatBox) { chatBox.scrollTop = chatBox.scrollHeight; }
+            }, 50);
+        }
+
+        function renderStats(list) {
+            var sums = { 'growth':0, 'joy':0, 'living':0, 'waste':0 };
+            list.forEach(function(e){ 
+                if(sums[e.tag] !== undefined) sums[e.tag] += Number(e.cost || 0); 
+            });
+            var total = Object.values(sums).reduce(function(a,b){ return a+b; }, 0);
+
+            var msgBox = document.getElementById('stat-msg');
+            if(total === 0 && list.length === 0) {
+                msgBox.innerText = "아직 기록이 없네? 우리의 추억을 채워줘! 📒";
+            } else if (total > 0) {
+                var maxKey = 'growth';
+                var maxVal = -1;
+                for(var k in sums) {
+                    if(sums[k] > maxVal) { maxVal = sums[k]; maxKey = k; }
+                }
+                if(maxKey == 'growth') msgBox.innerHTML = "와, 이번 달은 <span class='stat-highlight'>성장의 달</span>이구나?<br>너의 멋진 미래가 기대돼! 🌱";
+                else if(maxKey == 'joy') msgBox.innerHTML = "이번 달은 <span class='stat-highlight'>행복</span>으로 가득 채웠네?<br>네가 웃으면 나도 좋아! 🥰";
+                else if(maxKey == 'living') msgBox.innerHTML = "이번 달은 <span class='stat-highlight'>삶</span>을 튼튼하게 가꿨구나?<br>든든한 하루하루야! 🏡";
+                else msgBox.innerHTML = "잠시 <span class='stat-highlight'>방황</span>했더라도 괜찮아.<br>다음엔 더 가치 있게 날 써줘! ☁️";
+            }
+
+            var tags = [
+                { key: 'growth', label: '성장', color: '#A5D6A7' },
+                { key: 'joy', label: '행복', color: '#FFE082' },
+                { key: 'living', label: '생활', color: '#90CAF9' },
+                { key: 'waste', label: '방황', color: '#BDBDBD' }
+            ];
+            var statHtml = '';
+            tags.forEach(function(t) {
+                var percent = total > 0 ? Math.round((sums[t.key] / total) * 100) : 0;
+                statHtml += '<div style="display:flex; align-items:center; margin-bottom:8px; font-size:13px;">';
+                statHtml += '<span style="width:40px;">'+t.label+'</span>';
+                statHtml += '<div style="flex:1; height:4px; background:#EEE; margin:0 10px; border-radius:2px;">';
+                statHtml += '<div style="width:'+percent+'%; height:100%; background:'+t.color+'; border-radius:2px;"></div></div>';
+                statHtml += '<span class="font-eng">'+percent+'%</span></div>';
+            });
+            document.getElementById('stat-list').innerHTML = statHtml;
+
+            var histBox = document.getElementById('history-list');
+            if(list.length === 0) {
+                histBox.innerHTML = "<div style='text-align:center; color:#CCC; font-size:12px;'>기록된 내용이 없어요.</div>";
+            } else {
+                var histHtml = '';
+                list.sort(function(a,b){ return new Date(b.fullDate) - new Date(a.fullDate); });
+                list.forEach(function(e) {
+                    var icon = '🌱';
+                    var titleText = e.item;
+                    if(e.tag == 'joy') icon = '🥰';
+                    else if(e.tag == 'living') icon = '🏡';
+                    else if(e.tag == 'waste') icon = '🌫️';
+
+                    var hashDisplay = e.customHash ? `<span style="color:var(--accent); font-size:11px; margin-left:6px; font-weight:600;">${e.customHash}</span>` : '';
+
+                    histHtml += '<div class="history-item">';
+                    histHtml += '<div style="display:flex; flex-direction:column;"><div><span class="h-tag">'+icon+'</span><span class="h-title">'+titleText+'</span>'+hashDisplay+'</div><span class="h-date">'+e.fullDate+'</span></div>';
+                    
+                    histHtml += '<div style="display:flex; align-items:center;"><span class="h-cost font-eng">'+Number(e.cost).toLocaleString()+'</span>';
+                    
+                    histHtml += '<div class="h-actions">';
+                    histHtml += '<span class="h-btn" onclick="openModal(\'edit\', \''+e.id+'\')">✎</span>';
+                    histHtml += '<span class="h-btn del" onclick="delExp(\''+e.id+'\')">🗑</span></div></div></div>';
+                });
+                histBox.innerHTML = histHtml;
+            }
+
+            drawYearChart(total);
+        }
+
+        function drawYearChart(currentTotal) {
+            if(typeof Chart === 'undefined') return;
+            var ctx = document.getElementById('yearChart');
+            if(!ctx) return;
+            var context = ctx.getContext('2d');
+
+            if(myChart) myChart.destroy();
+
+            var labels = []; 
+            var data = [];
+            for(var i=1; i<=12; i++) {
+                labels.push(i);
+                if(i === curDate.getMonth() + 1) data.push(currentTotal);
+                else data.push(0);
+            }
+
+            myChart = new Chart(context, {
+                type: 'bar',
+                data: { 
+                    labels: labels, 
+                    datasets: [{ 
+                        label: '지출', 
+                        data: data, 
+                        backgroundColor: '#D4A373', 
+                        borderRadius: 2 
+                    }] 
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } }, 
+                    scales: { 
+                        x: { grid: { display: false }, ticks: {font:{family:'Montserrat'}} }, 
+                        y: { display: false } 
+                    } 
+                }
+            });
+        }
+
+        window.toggleHistory = function() {
+            var wrapper = document.getElementById('history-wrapper');
+            var btn = document.getElementById('btn-detail-toggle');
+            
+            if(wrapper.style.display === 'block') {
+                wrapper.style.display = 'none';
+                btn.innerText = '지출 상세 내역 보기 ▼';
+            } else {
+                wrapper.style.display = 'block';
+                btn.innerText = '지출 상세 내역 접기 ▲';
+            }
+        }
+
+        window.openModal = function(mode, id) {
+            document.getElementById('input-modal').classList.add('modal-active');
+            
+            if(mode == 'edit' && id) {
+                editingId = id;
+                var item = expenses.find(function(e){ return e.id == id; });
+                if(item) {
+                    document.getElementById('modal-title').innerText = "기록 수정하기 🛠️";
+                    document.getElementById('modal-btn').innerText = "수정완료";
+                    document.getElementById('m-date').value = item.fullDate;
+                    document.getElementById('m-item').value = item.item;
+                    document.getElementById('m-cost').value = Number(item.cost).toLocaleString();
+                    document.getElementById('m-hashtag').value = item.customHash || ''; 
+                    setTag(item.tag, null); 
+                }
+            } else {
+                editingId = null;
+                document.getElementById('modal-title').innerText = "기록 남기기 ✏️";
+                document.getElementById('modal-btn').innerText = "기록하기";
+                document.getElementById('m-date').valueAsDate = new Date();
+                document.getElementById('m-item').value = '';
+                document.getElementById('m-cost').value = '';
+                document.getElementById('m-hashtag').value = ''; 
+                selectedTag = '';
+                var btns = document.querySelectorAll('.tag-btn');
+                for(var i=0; i<btns.length; i++) btns[i].classList.remove('selected');
+            }
+        }
+
+        window.closeModal = function() {
+            document.getElementById('input-modal').classList.remove('modal-active');
+        }
+
+        window.setTag = function(tag, el) {
+            selectedTag = tag;
+            var btns = document.querySelectorAll('.tag-btn');
+            for(var i=0; i<btns.length; i++) btns[i].classList.remove('selected');
+            if(el) el.classList.add('selected');
+        }
+
+        window.addExp = function() {
+            var date = document.getElementById('m-date').value;
+            var item = document.getElementById('m-item').value;
+            var cost = Number(document.getElementById('m-cost').value.replace(/,/g, "") || 0);
+            
+            var customHash = document.getElementById('m-hashtag').value.trim();
+            if(customHash && !customHash.startsWith('#')) {
+                customHash = '#' + customHash;
+            }
+
+            if(!date || !item || !cost || !selectedTag) {
+                alert("내용을 모두 입력해주세요!");
+                return;
+            }
+
+            var d = new Date(date);
+            var year = d.getFullYear();
+            var month = d.getMonth() + 1;
+
+            if(editingId) {
+                var idx = expenses.findIndex(function(e){ return e.id == editingId; });
+                if(idx > -1) {
+                    expenses[idx] = {
+                        id: editingId, year: year, month: month, fullDate: date,
+                        item: item, cost: cost, tag: selectedTag, customHash: customHash
+                    };
+                }
+                alert("수정되었습니다.");
+            } else {
+                expenses.push({
+                    id: Date.now().toString(),
+                    year: year, month: month, fullDate: date,
+                    item: item, cost: cost, tag: selectedTag, customHash: customHash
+                });
+            }
+            
+            localStorage.setItem(DB_EXP, JSON.stringify(expenses));
+            closeModal();
+            curDate = new Date(date);
+            renderAll();
+        }
+
+        window.delExp = function(id) {
+            if(confirm("기록을 지울까요?")) {
+                expenses = expenses.filter(function(e){ return e.id != id; });
+                localStorage.setItem(DB_EXP, JSON.stringify(expenses));
+                renderAll();
+            }
+        }
+
+        window.saveGoal = function() {
+            var goal = document.getElementById('inp-goal').value;
+            var key = curDate.getFullYear() + '-' + (curDate.getMonth()+1);
+            if(!settings[key]) settings[key] = { inc:0, fix:0, incDetails:[], fixDetails:[], goal:'' };
+            settings[key].goal = goal;
+            localStorage.setItem(DB_SET, JSON.stringify(settings));
+            alert("목표가 저장되었습니다.");
+            renderAll();
+        }
+
+        var lastQuoteIndex = -1;
+        window.changeQuote = function() {
+            var quotes = [
+                "날 가치 있는 곳에 써주면<br>더 좋은 일로 되돌아올 거야.",
+                "오늘 하루도 정말 고생 많았어! 토닥토닥.",
+                "너의 꿈을 위해 쓰이는 순간이<br>나에겐 가장 행복해.",
+                "사라지는 게 아니야.<br>너의 경험과 추억으로 변신하는 거야.",
+                "나를 아껴주는 너의 마음,<br>내가 더 크게 불려줄게.",
+                "작은 저축이 모여 큰 기쁨이 될 거야."
+            ];
+            
+            var newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * quotes.length);
+            } while (newIndex === lastQuoteIndex);
+            
+            lastQuoteIndex = newIndex;
+            document.getElementById('doni-speech-bubble').innerHTML = '"' + quotes[newIndex] + '"';
+        }
+
+    </script>
+</body>
+</html>
