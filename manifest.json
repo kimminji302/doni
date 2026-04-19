@@ -1,0 +1,17 @@
+{
+  "name": "돈이와 함께한 모든 순간들",
+  "short_name": "돈이",
+  "start_url": "/doni/index.html",
+  "scope": "/doni/",
+  "display": "standalone",
+  "background_color": "#F9F7F2",
+  "theme_color": "#F9F7F2",
+  "icons": [
+    {
+      "src": "home.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
