@@ -196,13 +196,12 @@
         }
       };
 
-      // ── Supabase 저장 (user_data 테이블에 JSON 통째로 저장) ──
+      // ── Supabase 저장 (해당 컬럼만 update → 다른 컬럼 보존) ──
       async function dbSave(key, value, uid) {
         const col = key === KEYS.exp ? 'expenses' : key === KEYS.set ? 'settings' : 'plans';
-        await sb.from('user_data').upsert(
-          { user_id: uid, [col]: JSON.parse(value), updated_at: new Date().toISOString() },
-          { onConflict: 'user_id' }
-        );
+        await sb.from('user_data')
+          .update({ [col]: JSON.parse(value), updated_at: new Date().toISOString() })
+          .eq('user_id', uid);
       }
 
       // ── Supabase → localStorage 로드 ──
@@ -236,12 +235,14 @@
         await migrateIfNeeded(user.id);
         await dbLoad(user.id);
 
-        // Vue가 이미 localStorage 읽은 상태 → 1회 새로고침으로 재초기화
+        // 매 로그인마다 1회 reload → Vue가 최신 localStorage 읽도록 보장
         if (!sessionStorage.getItem('sb_ok')) {
           sessionStorage.setItem('sb_ok', '1');
           location.reload();
           return;
         }
+        // reload 완료 → sb_ok 삭제 (다음 로그인에서도 reload 보장)
+        sessionStorage.removeItem('sb_ok');
         overlay.style.display = 'none';
         appEl.style.display = '';
         injectUI();
