@@ -196,63 +196,22 @@
         }
       };
 
-      // ── Supabase 저장 ──
+      // ── Supabase 저장 (user_data 테이블에 JSON 통째로 저장) ──
       async function dbSave(key, value, uid) {
-        if (key === KEYS.exp) {
-          const rows = (JSON.parse(value) || []).map(e => ({
-            id: String(e.id), user_id: uid, year: e.year, month: e.month,
-            full_date: e.fullDate || null, item: e.item || '',
-            cost: e.cost || 0, tag: e.tag || '', custom_hash: e.customHash || ''
-          }));
-          await sb.from('expenses').delete().eq('user_id', uid);
-          if (rows.length) await sb.from('expenses').insert(rows);
-
-        } else if (key === KEYS.set) {
-          const obj = JSON.parse(value) || {};
-          for (const [ym, data] of Object.entries(obj)) {
-            const [y, m] = ym.split('-').map(Number);
-            if (!y || !m) continue;
-            await sb.from('monthly_settings').upsert(
-              { user_id: uid, year: y, month: m, data, updated_at: new Date().toISOString() },
-              { onConflict: 'user_id,year,month' }
-            );
-          }
-
-        } else if (key === KEYS.plan) {
-          const rows = (JSON.parse(value) || []).map(p => ({
-            id: String(p.id), user_id: uid, item: p.item || '',
-            cost: p.cost || 0, tag: p.tag || '', reason: p.reason || '',
-            doni_reply: p.doniReply || '', status: p.status || 'thinking'
-          }));
-          await sb.from('plans').delete().eq('user_id', uid);
-          if (rows.length) await sb.from('plans').insert(rows);
-        }
+        const col = key === KEYS.exp ? 'expenses' : key === KEYS.set ? 'settings' : 'plans';
+        await sb.from('user_data').upsert(
+          { user_id: uid, [col]: JSON.parse(value), updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        );
       }
 
       // ── Supabase → localStorage 로드 ──
       async function dbLoad(uid) {
-        const [eR, sR, pR] = await Promise.all([
-          sb.from('expenses').select('*').eq('user_id', uid),
-          sb.from('monthly_settings').select('*').eq('user_id', uid),
-          sb.from('plans').select('*').eq('user_id', uid)
-        ]);
-        if (eR.data?.length) {
-          _set(KEYS.exp, JSON.stringify(eR.data.map(e => ({
-            id: e.id, year: e.year, month: e.month, fullDate: e.full_date,
-            item: e.item, cost: e.cost, tag: e.tag, customHash: e.custom_hash
-          }))));
-        }
-        if (sR.data?.length) {
-          const obj = {};
-          sR.data.forEach(s => { obj[`${s.year}-${s.month}`] = s.data; });
-          _set(KEYS.set, JSON.stringify(obj));
-        }
-        if (pR.data?.length) {
-          _set(KEYS.plan, JSON.stringify(pR.data.map(p => ({
-            id: p.id, item: p.item, cost: p.cost, tag: p.tag,
-            reason: p.reason, doniReply: p.doni_reply, status: p.status
-          }))));
-        }
+        const { data } = await sb.from('user_data').select('*').eq('user_id', uid).single();
+        if (!data) return;
+        if (data.expenses) _set(KEYS.exp, JSON.stringify(data.expenses));
+        if (data.settings)  _set(KEYS.set, JSON.stringify(data.settings));
+        if (data.plans)     _set(KEYS.plan, JSON.stringify(data.plans));
       }
 
       // ── 게스트 데이터 → Supabase 1회 마이그레이션 ──
@@ -339,52 +298,17 @@
                 syncBtn.textContent = '동기화 중...';
                 try {
                   const sb = window._sb;
-                  const results = [];
-
-                  // expenses
-                  const exps = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
-                  for (const e of exps) {
-                    const { error } = await sb.from('expenses').upsert({
-                      id: e.id || (uid + '_' + Date.now() + '_' + Math.random()),
-                      user_id: uid,
-                      year: e.year, month: e.month,
-                      item: e.item, cost: e.cost, tag: e.tag || ''
-                    }, { onConflict: 'id' });
-                    if (error) results.push('expenses 오류: ' + error.message);
-                  }
-
-                  // monthly_settings
-                  const sets = JSON.parse(localStorage.getItem('doni_set_v3') || '{}');
-                  const months = Object.keys(sets);
-                  for (const ym of months) {
-                    const s = sets[ym];
-                    const [y, m] = ym.split('-').map(Number);
-                    const { error } = await sb.from('monthly_settings').upsert({
-                      id: uid + '_' + ym, user_id: uid,
-                      year: y, month: m,
-                      budget: s.budget || 0,
-                      saving_goal: s.savingGoal || 0,
-                      memo: s.memo || ''
-                    }, { onConflict: 'id' });
-                    if (error) results.push('settings 오류: ' + error.message);
-                  }
-
-                  // plans
+                  const exps  = JSON.parse(localStorage.getItem('doni_exp_v3')  || '[]');
+                  const sets  = JSON.parse(localStorage.getItem('doni_set_v3')  || '{}');
                   const plans = JSON.parse(localStorage.getItem('doni_plan_v3') || '[]');
-                  for (const p of plans) {
-                    const { error } = await sb.from('plans').upsert({
-                      id: p.id || (uid + '_plan_' + Date.now() + '_' + Math.random()),
-                      user_id: uid,
-                      year: p.year, month: p.month,
-                      text: p.text, done: p.done || false
-                    }, { onConflict: 'id' });
-                    if (error) results.push('plans 오류: ' + error.message);
-                  }
-
-                  if (results.length === 0) {
-                    alert('✅ 동기화 완료!\nexpenses: ' + exps.length + '건\nsettings: ' + months.length + '건\nplans: ' + plans.length + '건');
+                  const { error } = await sb.from('user_data').upsert(
+                    { user_id: uid, expenses: exps, settings: sets, plans: plans, updated_at: new Date().toISOString() },
+                    { onConflict: 'user_id' }
+                  );
+                  if (error) {
+                    alert('⚠️ 오류: ' + error.message);
                   } else {
-                    alert('⚠️ 일부 오류:\n' + results.join('\n'));
+                    alert('✅ 동기화 완료!\n지출: ' + exps.length + '건\n설정: ' + Object.keys(sets).length + '개월\n구매계획: ' + plans.length + '건');
                   }
                 } catch(e) {
                   alert('오류: ' + e.message);
@@ -400,41 +324,6 @@
         });
         obs.observe(appEl, { childList: true, subtree: true });
       }
-
-      // ── 전역 함수 ──
-      // ── 디버그: 연결 상태 확인 ──
-      window.doniDebug = async function () {
-        const box = document.getElementById('debug-box');
-        box.style.display = 'block';
-        box.textContent = '점검 중...\n';
-        const log = s => { box.textContent += s + '\n'; };
-
-        log('1. Supabase SDK: ' + (window.supabase ? '✅' : '❌'));
-        log('2. window._uid: ' + (window._uid || '없음 (로그인 안됨)'));
-
-        try {
-          const { data: { session } } = await sb.auth.getSession();
-          log('3. 세션: ' + (session ? '✅ ' + session.user.email : '❌ 없음'));
-          if (session) {
-            log('4. user.id: ' + session.user.id);
-            // 테스트 insert
-            const testId = 'debug-' + Date.now();
-            const { error: insErr } = await sb.from('expenses').insert([{
-              id: testId, user_id: session.user.id,
-              year: 2025, month: 1, item: '디버그테스트', cost: 1, tag: '테스트'
-            }]);
-            if (insErr) {
-              log('5. DB 저장: ❌ ' + insErr.message);
-            } else {
-              log('5. DB 저장: ✅ 성공!');
-              await sb.from('expenses').delete().eq('id', testId);
-              log('6. DB 삭제: ✅');
-            }
-          }
-        } catch(e) {
-          log('오류: ' + e.message);
-        }
-      };
 
       window.signInWithGoogle = async function () {
         const btn = document.getElementById('google-login-btn');
@@ -459,11 +348,7 @@
         document.getElementById('reset-modal').style.display = 'none';
         const uid = window._uid;
         if (uid) {
-          await Promise.all([
-            sb.from('expenses').delete().eq('user_id', uid),
-            sb.from('monthly_settings').delete().eq('user_id', uid),
-            sb.from('plans').delete().eq('user_id', uid)
-          ]).catch(() => {});
+          await sb.from('user_data').delete().eq('user_id', uid).catch(() => {});
         }
         ALL_KEYS.forEach(k => localStorage.removeItem(k));
         localStorage.removeItem('doni_logged');
