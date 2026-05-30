@@ -134,7 +134,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
-  <div id="auth-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#F9F7F2;flex-direction:column;align-items:center;justify-content:center;font-family:'Gowun Batang',serif;">
+  <div id="auth-overlay" style="display:flex;position:fixed;inset:0;z-index:9999;background:#F9F7F2;flex-direction:column;align-items:center;justify-content:center;font-family:'Gowun Batang',serif;">
     <div style="display:flex;flex-direction:column;align-items:center;gap:24px;padding:48px 32px;max-width:360px;width:100%;">
       <img src="doni.gif" alt="돈이" style="width:120px;height:120px;object-fit:contain;">
       <div style="text-align:center;">
@@ -153,54 +153,90 @@
     (function() {
       const SUPABASE_URL = 'https://kuilgkjslbsovzapkxva.supabase.co';
       const SUPABASE_KEY = 'sb_publishable__Gv6gzSfRFkQBueNyWX_mA_hVoJOeVb';
-      const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      window._supabase = sb;
 
       const overlay = document.getElementById('auth-overlay');
       const appEl = document.getElementById('app');
 
-      function showApp(user) {
-        overlay.style.display = 'none';
-        appEl.style.display = '';
-        window._currentUser = user;
-      }
+      // 오버레이를 먼저 보여주고 세션 확인 후 전환
+      overlay.style.display = 'flex';
+      appEl.style.display = 'none';
 
-      function showLogin() {
-        overlay.style.display = 'flex';
-        appEl.style.display = 'none';
-        window._currentUser = null;
-      }
-
-      sb.auth.getSession().then(({ data: { session } }) => {
-        if (session) showApp(session.user);
-        else showLogin();
-      });
-
-      sb.auth.onAuthStateChange((event, session) => {
-        if (session) showApp(session.user);
-        else showLogin();
-      });
-
-      window.signInWithGoogle = async function() {
-        const btn = document.getElementById('google-login-btn');
-        btn.disabled = true;
-        btn.style.opacity = '0.7';
-        const { error } = await sb.auth.signInWithOAuth({
-          provider: 'google',
-          options: { redirectTo: window.location.origin }
-        });
-        if (error) {
-          const errEl = document.getElementById('auth-error');
-          errEl.textContent = '로그인 중 오류가 발생했어요. 다시 시도해주세요.';
-          errEl.style.display = 'block';
-          btn.disabled = false;
-          btn.style.opacity = '1';
+      function initSupabase() {
+        if (!window.supabase) {
+          setTimeout(initSupabase, 100);
+          return;
         }
-      };
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        window._supabase = sb;
 
-      window.signOut = async function() {
-        await sb.auth.signOut();
-      };
+        function showApp(user) {
+          overlay.style.display = 'none';
+          appEl.style.display = '';
+          window._currentUser = user;
+          injectLogoutButton();
+        }
+
+        function showLogin() {
+          overlay.style.display = 'flex';
+          appEl.style.display = 'none';
+          window._currentUser = null;
+        }
+
+        sb.auth.getSession().then(({ data: { session } }) => {
+          if (session) showApp(session.user);
+          else showLogin();
+        });
+
+        sb.auth.onAuthStateChange((event, session) => {
+          if (session) showApp(session.user);
+          else showLogin();
+        });
+
+        window.signInWithGoogle = async function() {
+          const btn = document.getElementById('google-login-btn');
+          btn.disabled = true;
+          btn.style.opacity = '0.7';
+          const { error } = await sb.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: window.location.origin }
+          });
+          if (error) {
+            const errEl = document.getElementById('auth-error');
+            errEl.textContent = '로그인 중 오류가 발생했어요. 다시 시도해주세요.';
+            errEl.style.display = 'block';
+            btn.disabled = false;
+            btn.style.opacity = '1';
+          }
+        };
+
+        window.signOut = async function() {
+          await sb.auth.signOut();
+        };
+      }
+
+      // 설정탭 "이달의 약속" 페이지에 로그아웃 버튼 주입
+      function injectLogoutButton() {
+        if (document.getElementById('doni-logout-btn')) return;
+        const observer = new MutationObserver(() => {
+          if (document.getElementById('doni-logout-btn')) return;
+          const titles = document.querySelectorAll('.page-title');
+          titles.forEach(el => {
+            if (el.textContent.trim() === '이달의 약속') {
+              const btn = document.createElement('button');
+              btn.id = 'doni-logout-btn';
+              btn.textContent = '로그아웃';
+              btn.onclick = window.signOut;
+              btn.style.cssText = 'position:absolute;top:16px;right:16px;background:none;border:1px solid #C5B9AD;border-radius:8px;padding:6px 14px;font-family:inherit;font-size:12px;color:#7D5A3C;cursor:pointer;';
+              const parent = el.closest('.page-title')?.parentElement || el.parentElement;
+              parent.style.position = 'relative';
+              parent.appendChild(btn);
+            }
+          });
+        });
+        observer.observe(document.getElementById('app'), { childList: true, subtree: true });
+      }
+
+      initSupabase();
     })();
   </script>
 </body>
