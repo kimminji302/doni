@@ -297,59 +297,60 @@
             wrap.appendChild(logoutBtn);
             wrap.appendChild(resetBtn);
 
-            // 처음으로 버튼 숨김 + 동기화 버튼 삽입
+            // 처음으로 버튼 → 데이터 동기화로 교체
             const parent = wrap.closest('[class]') || wrap.parentElement;
-            const tryInsertSync = () => {
-              // 처음으로 버튼 찾아서 숨기고 그 자리에 동기화 버튼 삽입
+            const tryTransform = () => {
               const allBtns = parent.querySelectorAll('button');
-              let inserted = false;
+              let done = false;
               allBtns.forEach(btn => {
-                if (btn.textContent.trim() === '처음으로' && !btn.dataset.doniHidden) {
-                  btn.dataset.doniHidden = '1';
-                  btn.style.display = 'none';
-                  btn.parentElement.insertBefore(syncBtn, btn);
-                  inserted = true;
+                if (btn.textContent.trim() === '처음으로' && !btn.dataset.doniDone) {
+                  btn.dataset.doniDone = '1';
+                  btn.textContent = '데이터 동기화';
+                  // 목표 저장하기 버튼(btn-fill)과 나란히 — 아웃라인 스타일 맞춤
+                  btn.className = '';
+                  btn.style.cssText = 'flex:1;padding:14px;border-radius:50px;border:1.5px solid #1a1a1a;background:none;font-family:inherit;font-size:15px;color:#1a1a1a;cursor:pointer;font-weight:500;';
+                  // 형제인 목표 저장하기 버튼도 flex:1로
+                  const sibling = btn.parentElement.querySelector('.btn-fill');
+                  if (sibling) {
+                    sibling.style.flex = '1';
+                  }
+                  // 부모 컨테이너 flex row로
+                  btn.parentElement.style.cssText = 'display:flex;gap:8px;padding:0 16px;margin-top:8px;';
+                  btn.onclick = async () => {
+                    const uid = window._uid;
+                    if (!uid) { alert('로그인이 필요합니다.'); return; }
+                    btn.disabled = true;
+                    btn.textContent = '동기화 중...';
+                    try {
+                      const sb = window._sb;
+                      const exps  = JSON.parse(localStorage.getItem('doni_exp_v3')  || '[]');
+                      const sets  = JSON.parse(localStorage.getItem('doni_set_v3')  || '{}');
+                      const plans = JSON.parse(localStorage.getItem('doni_plan_v3') || '[]');
+                      const { error } = await sb.from('user_data').upsert(
+                        { user_id: uid, expenses: exps, settings: sets, plans: plans, updated_at: new Date().toISOString() },
+                        { onConflict: 'user_id' }
+                      );
+                      if (error) {
+                        alert('⚠️ 오류: ' + error.message);
+                      } else {
+                        alert('✅ 동기화 완료!\n지출: ' + exps.length + '건\n설정: ' + Object.keys(sets).length + '개월\n구매계획: ' + plans.length + '건');
+                      }
+                    } catch(e) {
+                      alert('오류: ' + e.message);
+                    } finally {
+                      btn.disabled = false;
+                      btn.textContent = '데이터 동기화';
+                    }
+                  };
+                  done = true;
                 }
               });
-              return inserted;
+              return done;
             };
 
-            // 데이터 동기화 버튼
-            const syncBtn = Object.assign(document.createElement('button'), {
-              textContent: '데이터 동기화',
-              onclick: async () => {
-                const uid = window._uid;
-                if (!uid) { alert('로그인이 필요합니다.'); return; }
-                syncBtn.disabled = true;
-                syncBtn.textContent = '동기화 중...';
-                try {
-                  const sb = window._sb;
-                  const exps  = JSON.parse(localStorage.getItem('doni_exp_v3')  || '[]');
-                  const sets  = JSON.parse(localStorage.getItem('doni_set_v3')  || '{}');
-                  const plans = JSON.parse(localStorage.getItem('doni_plan_v3') || '[]');
-                  const { error } = await sb.from('user_data').upsert(
-                    { user_id: uid, expenses: exps, settings: sets, plans: plans, updated_at: new Date().toISOString() },
-                    { onConflict: 'user_id' }
-                  );
-                  if (error) {
-                    alert('⚠️ 오류: ' + error.message);
-                  } else {
-                    alert('✅ 동기화 완료!\n지출: ' + exps.length + '건\n설정: ' + Object.keys(sets).length + '개월\n구매계획: ' + plans.length + '건');
-                  }
-                } catch(e) {
-                  alert('오류: ' + e.message);
-                } finally {
-                  syncBtn.disabled = false;
-                  syncBtn.textContent = '데이터 동기화';
-                }
-              }
-            });
-            syncBtn.style.cssText = 'display:block;width:calc(100% - 32px);margin:8px 16px 0;background:none;border:1px solid #C5B9AD;border-radius:8px;padding:10px;font-family:inherit;font-size:13px;color:#7D5A3C;cursor:pointer;text-align:center;';
-
-            // 처음으로 버튼이 아직 렌더링 안 됐을 수 있으니 재시도
-            if (!tryInsertSync()) {
+            if (!tryTransform()) {
               const retryObs = new MutationObserver(() => {
-                if (tryInsertSync()) retryObs.disconnect();
+                if (tryTransform()) retryObs.disconnect();
               });
               retryObs.observe(parent, { childList: true, subtree: true });
             }
