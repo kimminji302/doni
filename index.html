@@ -306,16 +306,15 @@
                 if (btn.textContent.trim() === '처음으로' && !btn.dataset.doniDone) {
                   btn.dataset.doniDone = '1';
                   btn.textContent = '데이터 동기화';
-                  // 목표 저장하기 버튼(btn-fill)과 나란히 — 아웃라인 스타일 맞춤
                   btn.className = '';
-                  btn.style.cssText = 'flex:1;padding:14px;border-radius:50px;border:1.5px solid #1a1a1a;background:none;font-family:inherit;font-size:15px;color:#1a1a1a;cursor:pointer;font-weight:500;';
-                  // 형제인 목표 저장하기 버튼도 flex:1로
+                  btn.style.cssText = 'flex:1 1 0;min-width:0;padding:13px;border-radius:50px;border:1.5px solid #1a1a1a;background:none;font-family:Gowun Batang,serif;font-size:13px;font-weight:700;color:#1a1a1a;cursor:pointer;box-sizing:border-box;';
+                  // btn-fill의 width:100% 무력화 + flex 적용
                   const sibling = btn.parentElement.querySelector('.btn-fill');
                   if (sibling) {
-                    sibling.style.flex = '1';
+                    sibling.style.cssText = sibling.style.cssText + 'flex:1 1 0!important;width:auto!important;min-width:0;box-sizing:border-box;';
                   }
-                  // 부모 컨테이너 flex row로
-                  btn.parentElement.style.cssText = 'display:flex;gap:8px;padding:0 16px;margin-top:8px;';
+                  // 부모 컨테이너 flex row
+                  btn.parentElement.style.cssText = 'display:flex!important;flex-direction:row!important;gap:8px;padding:0 16px;margin-top:8px;';
                   btn.onclick = async () => {
                     const uid = window._uid;
                     if (!uid) { alert('로그인이 필요합니다.'); return; }
