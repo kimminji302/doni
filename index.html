@@ -164,124 +164,117 @@
   <div id="app" style="display:none"></div>
   <script>
   (function () {
-    const SUPABASE_URL = 'https://kuilgkjslbsovzapkxva.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1aWxna2pzbGJzb3Z6YXBreHZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMjYwNjQsImV4cCI6MjA5NTcwMjA2NH0.NtDcfMekDRnXtfVU3JATsvVdCUDouGkJKSmdkVMl72M';
-    const EXP_KEY  = 'doni_exp_v3';
-    const SET_KEY  = 'doni_set_v3';
-    const PLAN_KEY = 'doni_plan_v3';
-    const SYNC_KEYS = [EXP_KEY, SET_KEY, PLAN_KEY];
+    const SUPA_URL = 'https://kuilgkjslbsovzapkxva.supabase.co';
+    const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1aWxna2pzbGJzb3Z6YXBreHZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMjYwNjQsImV4cCI6MjA5NTcwMjA2NH0.NtDcfMekDRnXtfVU3JATsvVdCUDouGkJKSmdkVMl72M';
+    const KEYS = { exp: 'doni_exp_v3', set: 'doni_set_v3', plan: 'doni_plan_v3' };
+    const ALL_KEYS = Object.values(KEYS);
 
+    // 원본 setItem 보존
+    const _set = localStorage.setItem.bind(localStorage);
     const overlay = document.getElementById('auth-overlay');
     const appEl   = document.getElementById('app');
-    const _origSet = localStorage.setItem.bind(localStorage);
 
-    function waitForSupabase(cb) {
-      if (window.supabase) { cb(); return; }
-      setTimeout(() => waitForSupabase(cb), 100);
+    // Supabase SDK 로드 대기
+    function ready(fn) {
+      if (window.supabase) return fn();
+      setTimeout(() => ready(fn), 50);
     }
 
-    waitForSupabase(function () {
-      const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    ready(function () {
+      const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
       window._sb = sb;
+      let loginHandled = false; // 중복 호출 방지
 
-      // ── localStorage intercept (로그인 상태에서만 Supabase 동기화) ──
+      // ── localStorage 저장 시 Supabase 동기화 ──
       localStorage.setItem = function (key, value) {
-        _origSet(key, value);
-        if (window._user && SYNC_KEYS.includes(key)) {
-          syncKey(key, value, window._user.id);
+        _set(key, value);
+        if (window._uid && ALL_KEYS.includes(key)) {
+          dbSave(key, value, window._uid).catch(e => console.error('[sync]', e));
         }
       };
 
-      async function syncKey(key, value, uid) {
-        try {
-          if (key === EXP_KEY) {
-            const arr = JSON.parse(value || '[]');
-            await sb.from('expenses').delete().eq('user_id', uid);
-            if (arr.length > 0) {
-              await sb.from('expenses').insert(arr.map(e => ({
-                id: String(e.id), user_id: uid,
-                year: e.year, month: e.month,
-                full_date: e.fullDate || null,
-                item: e.item || '', cost: e.cost || 0,
-                tag: e.tag || '', custom_hash: e.customHash || ''
-              })));
-            }
-          } else if (key === SET_KEY) {
-            const obj = JSON.parse(value || '{}');
-            for (const [ym, data] of Object.entries(obj)) {
-              const [y, m] = ym.split('-').map(Number);
-              if (!y || !m) continue;
-              await sb.from('monthly_settings').upsert(
-                { user_id: uid, year: y, month: m, data,
-                  updated_at: new Date().toISOString() },
-                { onConflict: 'user_id,year,month' }
-              );
-            }
-          } else if (key === PLAN_KEY) {
-            const arr = JSON.parse(value || '[]');
-            await sb.from('plans').delete().eq('user_id', uid);
-            if (arr.length > 0) {
-              await sb.from('plans').insert(arr.map(p => ({
-                id: String(p.id), user_id: uid,
-                item: p.item || '', cost: p.cost || 0,
-                tag: p.tag || '', reason: p.reason || '',
-                doni_reply: p.doniReply || '', status: p.status || 'thinking'
-              })));
-            }
+      // ── Supabase 저장 ──
+      async function dbSave(key, value, uid) {
+        if (key === KEYS.exp) {
+          const rows = (JSON.parse(value) || []).map(e => ({
+            id: String(e.id), user_id: uid, year: e.year, month: e.month,
+            full_date: e.fullDate || null, item: e.item || '',
+            cost: e.cost || 0, tag: e.tag || '', custom_hash: e.customHash || ''
+          }));
+          await sb.from('expenses').delete().eq('user_id', uid);
+          if (rows.length) await sb.from('expenses').insert(rows);
+
+        } else if (key === KEYS.set) {
+          const obj = JSON.parse(value) || {};
+          for (const [ym, data] of Object.entries(obj)) {
+            const [y, m] = ym.split('-').map(Number);
+            if (!y || !m) continue;
+            await sb.from('monthly_settings').upsert(
+              { user_id: uid, year: y, month: m, data, updated_at: new Date().toISOString() },
+              { onConflict: 'user_id,year,month' }
+            );
           }
-        } catch (e) { console.error('[doni] sync error', e); }
+
+        } else if (key === KEYS.plan) {
+          const rows = (JSON.parse(value) || []).map(p => ({
+            id: String(p.id), user_id: uid, item: p.item || '',
+            cost: p.cost || 0, tag: p.tag || '', reason: p.reason || '',
+            doni_reply: p.doniReply || '', status: p.status || 'thinking'
+          }));
+          await sb.from('plans').delete().eq('user_id', uid);
+          if (rows.length) await sb.from('plans').insert(rows);
+        }
       }
 
-      async function loadFromSupabase(uid) {
-        try {
-          const [expRes, setRes, planRes] = await Promise.all([
-            sb.from('expenses').select('*').eq('user_id', uid),
-            sb.from('monthly_settings').select('*').eq('user_id', uid),
-            sb.from('plans').select('*').eq('user_id', uid)
-          ]);
-          if (expRes.data?.length > 0) {
-            _origSet(EXP_KEY, JSON.stringify(expRes.data.map(e => ({
-              id: e.id, year: e.year, month: e.month,
-              fullDate: e.full_date, item: e.item,
-              cost: e.cost, tag: e.tag, customHash: e.custom_hash
-            }))));
-          }
-          if (setRes.data?.length > 0) {
-            const obj = {};
-            setRes.data.forEach(s => { obj[s.year + '-' + s.month] = s.data; });
-            _origSet(SET_KEY, JSON.stringify(obj));
-          }
-          if (planRes.data?.length > 0) {
-            _origSet(PLAN_KEY, JSON.stringify(planRes.data.map(p => ({
-              id: p.id, item: p.item, cost: p.cost,
-              tag: p.tag, reason: p.reason,
-              doniReply: p.doni_reply, status: p.status
-            }))));
-          }
-        } catch (e) { console.error('[doni] load error', e); }
+      // ── Supabase → localStorage 로드 ──
+      async function dbLoad(uid) {
+        const [eR, sR, pR] = await Promise.all([
+          sb.from('expenses').select('*').eq('user_id', uid),
+          sb.from('monthly_settings').select('*').eq('user_id', uid),
+          sb.from('plans').select('*').eq('user_id', uid)
+        ]);
+        if (eR.data?.length) {
+          _set(KEYS.exp, JSON.stringify(eR.data.map(e => ({
+            id: e.id, year: e.year, month: e.month, fullDate: e.full_date,
+            item: e.item, cost: e.cost, tag: e.tag, customHash: e.custom_hash
+          }))));
+        }
+        if (sR.data?.length) {
+          const obj = {};
+          sR.data.forEach(s => { obj[`${s.year}-${s.month}`] = s.data; });
+          _set(KEYS.set, JSON.stringify(obj));
+        }
+        if (pR.data?.length) {
+          _set(KEYS.plan, JSON.stringify(pR.data.map(p => ({
+            id: p.id, item: p.item, cost: p.cost, tag: p.tag,
+            reason: p.reason, doniReply: p.doni_reply, status: p.status
+          }))));
+        }
       }
 
-      async function migrateGuestData(uid) {
-        try {
-          const { data: existing } = await sb.from('expenses')
-            .select('id').eq('user_id', uid).limit(1);
-          if (existing && existing.length > 0) return; // 이미 데이터 있으면 스킵
-          const expRaw  = localStorage.getItem(EXP_KEY);
-          const setRaw  = localStorage.getItem(SET_KEY);
-          const planRaw = localStorage.getItem(PLAN_KEY);
-          if (expRaw)  await syncKey(EXP_KEY,  expRaw,  uid);
-          if (setRaw)  await syncKey(SET_KEY,  setRaw,  uid);
-          if (planRaw) await syncKey(PLAN_KEY, planRaw, uid);
-        } catch (e) { console.error('[doni] migrate error', e); }
+      // ── 게스트 데이터 → Supabase 1회 마이그레이션 ──
+      async function migrateIfNeeded(uid) {
+        const { data } = await sb.from('expenses').select('id').eq('user_id', uid).limit(1);
+        if (data?.length) return; // 이미 Supabase에 데이터 있으면 스킵
+        for (const key of ALL_KEYS) {
+          const val = localStorage.getItem(key);
+          if (val) await dbSave(key, val, uid).catch(() => {});
+        }
       }
 
-      async function onLogin(user) {
-        window._user = user;
-        await migrateGuestData(user.id); // 게스트 데이터 먼저 마이그레이션
-        await loadFromSupabase(user.id); // Supabase 데이터 로드
-        if (!sessionStorage.getItem('doni_sb_ready')) {
-          sessionStorage.setItem('doni_sb_ready', '1');
-          location.reload(); // Vue가 새 데이터로 시작하도록 1회 새로고침
+      // ── 로그인 처리 (중복 실행 방지) ──
+      async function handleLogin(user) {
+        if (loginHandled) return;
+        loginHandled = true;
+        window._uid = user.id;
+
+        await migrateIfNeeded(user.id);
+        await dbLoad(user.id);
+
+        // Vue가 이미 localStorage 읽은 상태 → 1회 새로고침으로 재초기화
+        if (!sessionStorage.getItem('sb_ok')) {
+          sessionStorage.setItem('sb_ok', '1');
+          location.reload();
           return;
         }
         overlay.style.display = 'none';
@@ -289,97 +282,87 @@
         injectUI();
       }
 
-      function onLogout() {
-        window._user = null;
-        sessionStorage.removeItem('doni_sb_ready');
+      function handleLogout() {
+        window._uid = null;
+        loginHandled = false;
+        sessionStorage.removeItem('sb_ok');
         overlay.style.display = 'flex';
         appEl.style.display = 'none';
       }
 
+      // 세션 확인 (getSession + onAuthStateChange 둘 다 처리)
       sb.auth.getSession().then(({ data: { session } }) => {
-        if (session) onLogin(session.user);
-        else onLogout();
+        if (session) handleLogin(session.user);
+        else handleLogout();
       });
-
       sb.auth.onAuthStateChange((event, session) => {
-        if (session) onLogin(session.user);
-        else onLogout();
+        if (event === 'SIGNED_IN' && session) handleLogin(session.user);
+        if (event === 'SIGNED_OUT') handleLogout();
       });
 
       // ── 로그아웃 / 초기화 버튼 주입 ──
       function injectUI() {
-        if (document.getElementById('doni-injected')) return;
-        const observer = new MutationObserver(() => {
-          if (document.getElementById('doni-injected')) return;
-          const titles = document.querySelectorAll('.page-title');
-          titles.forEach(el => {
-            if (el.textContent.trim() === '이달의 약속' && !el.dataset.injected) {
-              el.dataset.injected = '1';
-              const wrap = el.parentElement;
-              wrap.style.position = 'relative';
+        const obs = new MutationObserver(() => {
+          document.querySelectorAll('.page-title').forEach(el => {
+            if (el.textContent.trim() !== '이달의 약속') return;
+            if (el.dataset.doni) return;
+            el.dataset.doni = '1';
+            const wrap = el.parentElement;
+            wrap.style.position = 'relative';
 
-              // 로그아웃 버튼
-              const logoutBtn = document.createElement('button');
-              logoutBtn.id = 'doni-injected';
-              logoutBtn.textContent = '로그아웃';
-              logoutBtn.onclick = () => window.signOut();
-              logoutBtn.style.cssText = 'position:absolute;top:16px;right:16px;background:none;border:1px solid #C5B9AD;border-radius:8px;padding:6px 12px;font-family:inherit;font-size:12px;color:#7D5A3C;cursor:pointer;';
+            const logoutBtn = Object.assign(document.createElement('button'), {
+              textContent: '로그아웃',
+              onclick: () => window.doniSignOut()
+            });
+            logoutBtn.style.cssText = 'position:absolute;top:16px;right:16px;background:none;border:1px solid #C5B9AD;border-radius:8px;padding:6px 12px;font-family:inherit;font-size:12px;color:#7D5A3C;cursor:pointer;';
 
-              // 초기화 버튼
-              const resetBtn = document.createElement('button');
-              resetBtn.textContent = '데이터 초기화';
-              resetBtn.onclick = () => {
-                document.getElementById('reset-modal').style.display = 'flex';
-              };
-              resetBtn.style.cssText = 'display:block;margin:24px auto 0;background:none;border:none;font-family:inherit;font-size:12px;color:#C5B9AD;cursor:pointer;text-decoration:underline;text-underline-offset:3px;';
+            const resetBtn = Object.assign(document.createElement('button'), {
+              textContent: '데이터 초기화',
+              onclick: () => { document.getElementById('reset-modal').style.display = 'flex'; }
+            });
+            resetBtn.style.cssText = 'display:block;margin:32px auto 0;background:none;border:none;font-family:inherit;font-size:12px;color:#C5B9AD;cursor:pointer;text-decoration:underline;text-underline-offset:3px;';
 
-              wrap.appendChild(logoutBtn);
-              // 섹션 맨 아래에 초기화 버튼 추가
-              const pageDiv = wrap.closest('[class*="page"]') || wrap.parentElement;
-              pageDiv.appendChild(resetBtn);
-            }
+            wrap.appendChild(logoutBtn);
+            (wrap.closest('[class]') || wrap.parentElement).appendChild(resetBtn);
           });
         });
-        observer.observe(appEl, { childList: true, subtree: true });
+        obs.observe(appEl, { childList: true, subtree: true });
       }
 
       // ── 전역 함수 ──
       window.signInWithGoogle = async function () {
         const btn = document.getElementById('google-login-btn');
-        btn.disabled = true; btn.style.opacity = '0.7';
+        btn.disabled = true; btn.style.opacity = '0.6';
         const { error } = await sb.auth.signInWithOAuth({
-          provider: 'google',
-          options: { redirectTo: window.location.origin }
+          provider: 'google', options: { redirectTo: location.origin }
         });
         if (error) {
-          document.getElementById('auth-error').textContent = '로그인 오류가 발생했어요. 다시 시도해주세요.';
-          document.getElementById('auth-error').style.display = 'block';
+          const el = document.getElementById('auth-error');
+          el.textContent = '로그인 오류가 발생했어요. 다시 시도해주세요.';
+          el.style.display = 'block';
           btn.disabled = false; btn.style.opacity = '1';
         }
       };
 
-      window.signOut = async function () {
-        sessionStorage.removeItem('doni_sb_ready');
+      window.doniSignOut = async function () {
+        sessionStorage.removeItem('sb_ok');
         await sb.auth.signOut();
       };
 
       window.confirmReset = async function () {
         document.getElementById('reset-modal').style.display = 'none';
-        const uid = window._user?.id;
-        try {
-          // Supabase 데이터 삭제
-          if (uid) {
-            await Promise.all([
-              sb.from('expenses').delete().eq('user_id', uid),
-              sb.from('monthly_settings').delete().eq('user_id', uid),
-              sb.from('plans').delete().eq('user_id', uid)
-            ]);
-          }
-          // localStorage 삭제
-          [EXP_KEY, SET_KEY, PLAN_KEY, 'doni_logged'].forEach(k => localStorage.removeItem(k));
-          sessionStorage.removeItem('doni_sb_ready');
-          location.reload();
-        } catch (e) { console.error('[doni] reset error', e); }
+        const uid = window._uid;
+        if (uid) {
+          await Promise.all([
+            sb.from('expenses').delete().eq('user_id', uid),
+            sb.from('monthly_settings').delete().eq('user_id', uid),
+            sb.from('plans').delete().eq('user_id', uid)
+          ]).catch(() => {});
+        }
+        ALL_KEYS.forEach(k => localStorage.removeItem(k));
+        localStorage.removeItem('doni_logged');
+        sessionStorage.removeItem('sb_ok');
+        location.reload();
       };
     });
   })();
