@@ -216,12 +216,15 @@
 
       // ── 게스트 데이터 → Supabase 1회 마이그레이션 ──
       async function migrateIfNeeded(uid) {
-        const { data } = await sb.from('expenses').select('id').eq('user_id', uid).limit(1);
+        const { data } = await sb.from('user_data').select('user_id').eq('user_id', uid).limit(1);
         if (data?.length) return; // 이미 Supabase에 데이터 있으면 스킵
-        for (const key of ALL_KEYS) {
-          const val = localStorage.getItem(key);
-          if (val) await dbSave(key, val, uid).catch(() => {});
-        }
+        const exps  = JSON.parse(localStorage.getItem(KEYS.exp)  || '[]');
+        const sets  = JSON.parse(localStorage.getItem(KEYS.set)  || '{}');
+        const plans = JSON.parse(localStorage.getItem(KEYS.plan) || '[]');
+        await sb.from('user_data').upsert(
+          { user_id: uid, expenses: exps, settings: sets, plans: plans, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        ).catch(() => {});
       }
 
       // ── 로그인 처리 (중복 실행 방지) ──
