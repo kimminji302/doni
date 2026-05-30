@@ -329,24 +329,73 @@
             const parent = wrap.closest('[class]') || wrap.parentElement;
             parent.appendChild(resetBtn);
 
-            // 디버그 버튼 (임시)
-            const debugBtn = Object.assign(document.createElement('button'), {
-              textContent: '🔍 동기화 상태 확인',
+            // 수동 동기화 버튼
+            const syncBtn = Object.assign(document.createElement('button'), {
+              textContent: '🔄 지금 바로 동기화',
               onclick: async () => {
                 const uid = window._uid;
-                let msg = 'uid: ' + (uid || '없음!') + '\n';
-                if (uid) {
-                  const {data, error} = await window._sb.from('expenses').select('count').eq('user_id', uid);
-                  msg += 'Supabase expenses: ' + (error ? '오류: '+error.message : JSON.stringify(data));
-                  // localStorage
-                  const local = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
-                  msg += '\nlocalStorage expenses: ' + local.length + '건';
+                if (!uid) { alert('로그인이 필요합니다.'); return; }
+                syncBtn.disabled = true;
+                syncBtn.textContent = '동기화 중...';
+                try {
+                  const sb = window._sb;
+                  const results = [];
+
+                  // expenses
+                  const exps = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
+                  for (const e of exps) {
+                    const { error } = await sb.from('expenses').upsert({
+                      id: e.id || (uid + '_' + Date.now() + '_' + Math.random()),
+                      user_id: uid,
+                      year: e.year, month: e.month,
+                      item: e.item, cost: e.cost, tag: e.tag || ''
+                    }, { onConflict: 'id' });
+                    if (error) results.push('expenses 오류: ' + error.message);
+                  }
+
+                  // monthly_settings
+                  const sets = JSON.parse(localStorage.getItem('doni_set_v3') || '{}');
+                  const months = Object.keys(sets);
+                  for (const ym of months) {
+                    const s = sets[ym];
+                    const [y, m] = ym.split('-').map(Number);
+                    const { error } = await sb.from('monthly_settings').upsert({
+                      id: uid + '_' + ym, user_id: uid,
+                      year: y, month: m,
+                      budget: s.budget || 0,
+                      saving_goal: s.savingGoal || 0,
+                      memo: s.memo || ''
+                    }, { onConflict: 'id' });
+                    if (error) results.push('settings 오류: ' + error.message);
+                  }
+
+                  // plans
+                  const plans = JSON.parse(localStorage.getItem('doni_plan_v3') || '[]');
+                  for (const p of plans) {
+                    const { error } = await sb.from('plans').upsert({
+                      id: p.id || (uid + '_plan_' + Date.now() + '_' + Math.random()),
+                      user_id: uid,
+                      year: p.year, month: p.month,
+                      text: p.text, done: p.done || false
+                    }, { onConflict: 'id' });
+                    if (error) results.push('plans 오류: ' + error.message);
+                  }
+
+                  if (results.length === 0) {
+                    alert('✅ 동기화 완료!\nexpenses: ' + exps.length + '건\nsettings: ' + months.length + '건\nplans: ' + plans.length + '건');
+                  } else {
+                    alert('⚠️ 일부 오류:\n' + results.join('\n'));
+                  }
+                } catch(e) {
+                  alert('오류: ' + e.message);
+                } finally {
+                  syncBtn.disabled = false;
+                  syncBtn.textContent = '🔄 지금 바로 동기화';
                 }
-                alert(msg);
               }
             });
-            debugBtn.style.cssText = 'display:block;margin:8px auto 0;background:none;border:1px dashed #C5B9AD;border-radius:8px;padding:6px 14px;font-family:inherit;font-size:11px;color:#aaa;cursor:pointer;';
-            parent.appendChild(debugBtn);
+            syncBtn.style.cssText = 'display:block;margin:8px auto 0;background:none;border:1px dashed #C5B9AD;border-radius:8px;padding:6px 14px;font-family:inherit;font-size:11px;color:#7D5A3C;cursor:pointer;';
+            parent.appendChild(syncBtn);
           });
         });
         obs.observe(appEl, { childList: true, subtree: true });
