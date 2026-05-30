@@ -169,11 +169,73 @@
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         window._supabase = sb;
 
+        // ── localStorage intercept ──────────────────────────────
+        const EXP_KEY = 'doni_test_exp_v2';
+        const SET_KEY = 'doni_test_set_v2';
+        const _origSet = localStorage.setItem.bind(localStorage);
+        const _origGet = localStorage.getItem.bind(localStorage);
+
+        async function syncToSupabase(key, value) {
+          const uid = window._currentUser?.id;
+          if (!uid) return;
+          if (key === EXP_KEY) {
+            const expenses = JSON.parse(value || '[]');
+            await sb.from('expenses').delete().eq('user_id', uid);
+            if (expenses.length > 0) {
+              const rows = expenses.map(e => ({
+                id: e.id, user_id: uid,
+                year: e.year, month: e.month,
+                full_date: e.fullDate, item: e.item,
+                cost: e.cost, tag: e.tag, custom_hash: e.customHash || ''
+              }));
+              await sb.from('expenses').insert(rows);
+            }
+          } else if (key === SET_KEY) {
+            const settings = JSON.parse(value || '{}');
+            for (const [ym, data] of Object.entries(settings)) {
+              const [year, month] = ym.split('-').map(Number);
+              await sb.from('monthly_settings')
+                .upsert({ user_id: uid, year, month, data, updated_at: new Date().toISOString() },
+                  { onConflict: 'user_id,year,month' });
+            }
+          }
+        }
+
+        localStorage.setItem = function(key, value) {
+          _origSet(key, value);
+          syncToSupabase(key, value);
+        };
+
+        async function loadFromSupabase(uid) {
+          // expenses
+          const { data: exps } = await sb.from('expenses')
+            .select('*').eq('user_id', uid);
+          if (exps && exps.length > 0) {
+            const arr = exps.map(e => ({
+              id: e.id, year: e.year, month: e.month,
+              fullDate: e.full_date, item: e.item,
+              cost: e.cost, tag: e.tag, customHash: e.custom_hash
+            }));
+            _origSet(EXP_KEY, JSON.stringify(arr));
+          }
+          // monthly_settings
+          const { data: sets } = await sb.from('monthly_settings')
+            .select('*').eq('user_id', uid);
+          if (sets && sets.length > 0) {
+            const obj = {};
+            sets.forEach(s => { obj[s.year + '-' + s.month] = s.data; });
+            _origSet(SET_KEY, JSON.stringify(obj));
+          }
+        }
+        // ───────────────────────────────────────────────────────
+
         function showApp(user) {
           overlay.style.display = 'none';
-          appEl.style.display = '';
           window._currentUser = user;
-          injectLogoutButton();
+          loadFromSupabase(user.id).then(() => {
+            appEl.style.display = '';
+            injectLogoutButton();
+          });
         }
 
         function showLogin() {
