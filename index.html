@@ -226,15 +226,25 @@
             sets.forEach(s => { obj[s.year + '-' + s.month] = s.data; });
             _origSet(SET_KEY, JSON.stringify(obj));
           }
+          // Vue가 localStorage를 이미 읽은 후라서 새로고침으로 반영
+          // sessionStorage 플래그로 무한루프 방지
+          if (!sessionStorage.getItem('doni_loaded')) {
+            sessionStorage.setItem('doni_loaded', '1');
+            window.location.reload();
+            return false;
+          }
+          return true;
         }
         // ───────────────────────────────────────────────────────
 
         function showApp(user) {
-          overlay.style.display = 'none';
           window._currentUser = user;
-          loadFromSupabase(user.id).then(() => {
-            appEl.style.display = '';
-            injectLogoutButton();
+          loadFromSupabase(user.id).then(ready => {
+            if (ready) {
+              overlay.style.display = 'none';
+              appEl.style.display = '';
+              injectLogoutButton();
+            }
           });
         }
 
@@ -272,6 +282,7 @@
         };
 
         window.signOut = async function() {
+          sessionStorage.removeItem('doni_loaded');
           await sb.auth.signOut();
         };
       }
