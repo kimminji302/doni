@@ -326,7 +326,27 @@
             resetBtn.style.cssText = 'display:block;margin:32px auto 0;background:none;border:none;font-family:inherit;font-size:12px;color:#C5B9AD;cursor:pointer;text-decoration:underline;text-underline-offset:3px;';
 
             wrap.appendChild(logoutBtn);
-            (wrap.closest('[class]') || wrap.parentElement).appendChild(resetBtn);
+            const parent = wrap.closest('[class]') || wrap.parentElement;
+            parent.appendChild(resetBtn);
+
+            // 디버그 버튼 (임시)
+            const debugBtn = Object.assign(document.createElement('button'), {
+              textContent: '🔍 동기화 상태 확인',
+              onclick: async () => {
+                const uid = window._uid;
+                let msg = 'uid: ' + (uid || '없음!') + '\n';
+                if (uid) {
+                  const {data, error} = await window._sb.from('expenses').select('count').eq('user_id', uid);
+                  msg += 'Supabase expenses: ' + (error ? '오류: '+error.message : JSON.stringify(data));
+                  // localStorage
+                  const local = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
+                  msg += '\nlocalStorage expenses: ' + local.length + '건';
+                }
+                alert(msg);
+              }
+            });
+            debugBtn.style.cssText = 'display:block;margin:8px auto 0;background:none;border:1px dashed #C5B9AD;border-radius:8px;padding:6px 14px;font-family:inherit;font-size:11px;color:#aaa;cursor:pointer;';
+            parent.appendChild(debugBtn);
           });
         });
         obs.observe(appEl, { childList: true, subtree: true });
