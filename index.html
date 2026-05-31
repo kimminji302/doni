@@ -138,6 +138,10 @@
     /* 처음으로 버튼 항상 숨김 */
     .btn-text { display: none !important; }
 
+    /* 삭제 버튼 미니멀 X (라이트 기본) */
+    .d-del { background: none !important; border: none !important; font-size: 0 !important; width: 24px !important; height: 24px !important; }
+    .d-del::after { content: "×"; font-size: 18px; font-weight: 300; line-height: 1; color: #BDBDBD; }
+
     @media (prefers-color-scheme: dark) {
       :root {
         --bg: #1C1810;
@@ -221,7 +225,7 @@
 
       /* 삭제 버튼 X로 변경 */
       .d-del { font-size: 0 !important; width: 24px !important; height: 24px !important; }
-      .d-del::after { content: "×"; font-size: 16px; font-weight: 400; line-height: 1; }
+      .d-del::after { content: "×"; font-size: 16px; font-weight: 400; line-height: 1; color: var(--danger); }
 
       /* 심리 분석 모달 시트 */
       [style*="82vh"] { background: #1C1810 !important; color: #F0EAE0 !important; }
