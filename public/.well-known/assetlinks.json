@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "kr.doniapp.twa",
+    "sha256_cert_fingerprints": [
+      "BC:EA:D0:86:36:2F:E4:CD:8A:ED:FB:E2:CD:DC:63:06:FE:5F:C2:DF:6C:40:9C:30:16:D3:B1:F3:78:CE:BB:9A"
+    ]
+  }
+}]
