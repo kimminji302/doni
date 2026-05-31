@@ -443,15 +443,18 @@
               parent.appendChild(resetBtn);
             }
 
-            // 동기화 버튼 (목표 저장하기 옆)
+            // 동기화 버튼 (목표 저장하기 나란히)
             if (!document.getElementById('doni-sync-btn')) {
               const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
               const saveBtn = parent.querySelector('.btn-fill');
               if (saveBtn) {
+                const btnRow = saveBtn.parentElement;
+                btnRow.style.cssText = 'display:flex;gap:8px;';
+                saveBtn.style.cssText = 'flex:1;padding:13px;border:none;background:var(--ink);color:#F0EAE0;border-radius:50px;font-size:13px;font-family:inherit;font-weight:700;cursor:pointer;';
                 const syncBtn = document.createElement('button');
                 syncBtn.id = 'doni-sync-btn';
                 syncBtn.textContent = '동기화';
-                syncBtn.style.cssText = 'width:100%;padding:13px;border:1.5px solid ' + (isDark ? 'rgba(240,234,224,0.5)' : 'var(--ink)') + ';background:transparent;color:' + (isDark ? '#F0EAE0' : 'var(--ink)') + ';border-radius:50px;font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;margin-top:8px;';
+                syncBtn.style.cssText = 'flex:1;padding:13px;border:1.5px solid ' + (isDark ? 'rgba(240,234,224,0.5)' : 'var(--ink)') + ';background:transparent;color:' + (isDark ? '#F0EAE0' : 'var(--ink)') + ';border-radius:50px;font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;';
                 syncBtn.onclick = async () => {
                   const uid = window._currentUser?.id;
                   if (!uid) { alert('로그인이 필요해요.'); return; }
@@ -460,7 +463,7 @@
                   await loadFromSupabase(uid);
                   location.reload();
                 };
-                saveBtn.parentElement.appendChild(syncBtn);
+                btnRow.appendChild(syncBtn);
               }
             }
           });
