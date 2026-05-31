@@ -139,37 +139,51 @@
       :root {
         --bg: #1C1810;
         --ink: #F0EAE0;
-        --sub: #A89880;
-        --accent: #D4A373;
-        --accent-light: #3D3025;
-        --line: #3A3228;
-        --white: #252118;
-        --shadow: 0 4px 20px rgba(0,0,0,.5);
+        --sub: rgba(240,234,224,0.5);
+        --accent: #F0EAE0;
+        --accent-light: rgba(240,234,224,0.1);
+        --line: rgba(240,234,224,0.15);
+        --white: rgba(240,234,224,0.07);
+        --danger: #E57373;
+        --shadow: 0 4px 20px rgba(0,0,0,.6);
         --shadow-sm: 0 2px 8px rgba(0,0,0,.4);
       }
-      html, body { background: #12100C; }
+      html, body { background: #1C1810; }
+
+      /* 오버레이 배경 */
       #auth-overlay { background: #1C1810 !important; }
-      .doni-char img, #auth-overlay img {
-        filter: invert(1) brightness(1.4) contrast(1.1) !important;
-      }
-      .bottom-nav img, .bottom-nav canvas,
-      .nav-icon img, .nav-icon canvas, .nav-icon span, .nav-icon > img,
-      .profile-icon img, .chat-header img {
-        filter: invert(1) brightness(1.4) !important;
-      }
       #auth-overlay, #auth-overlay * { color: #F0EAE0 !important; }
       #auth-overlay button, #auth-overlay button * { color: #3c4043 !important; }
-      .nav-item { color: #6A5C4A !important; }
+
+      /* 모든 선화 이미지 반전 */
+      #auth-overlay img,
+      .doni-char img,
+      .nav-icon img {
+        filter: invert(1) brightness(1.2) !important;
+        mix-blend-mode: normal !important;
+        opacity: 1 !important;
+      }
+
+      /* 탭 네비게이션 */
+      .bottom-nav { background: rgba(28,24,16,0.97) !important; }
+      .nav-item { color: rgba(240,234,224,0.35) !important; }
       .nav-item.active { color: #F0EAE0 !important; }
-      .login-title, .login-sub, .title-main, .title-sub { color: #F0EAE0 !important; }
-      .speech-bubble { color: #C4A882 !important; }
-      .chat-header { background: rgba(28,24,16,0.96) !important; }
-      .bottom-nav { background: rgba(28,24,16,0.96) !important; }
+
+      /* 헤더 */
+      .chat-header { background: rgba(28,24,16,0.97) !important; }
+
+      /* 버튼 */
       .btn-fill { background: #F0EAE0 !important; color: #1C1810 !important; }
-      .btn-outline { border-color: #F0EAE0 !important; color: #F0EAE0 !important; }
-      .stat-msg, .doni-guide, .card-doni { color: #C4A882 !important; background: #2A2318 !important; }
-      .plan-card.skipped { background: #1E1C18 !important; }
-      .plan-card.bought { background: #1A2418 !important; }
+      .btn-outline { border-color: rgba(240,234,224,0.5) !important; color: #F0EAE0 !important; }
+
+      /* 말풍선, 텍스트 */
+      .speech-bubble { color: rgba(240,234,224,0.8) !important; }
+      .title-main, .title-sub { color: #F0EAE0 !important; }
+
+      /* 카드 */
+      .stat-msg, .doni-guide, .card-doni { color: rgba(240,234,224,0.7) !important; background: rgba(240,234,224,0.05) !important; }
+      .plan-card.skipped { background: rgba(240,234,224,0.04) !important; }
+      .plan-card.bought { background: rgba(240,234,224,0.06) !important; }
     }
   </style>
 </head>
