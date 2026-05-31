@@ -187,8 +187,10 @@
 
       /* 카드 */
       .stat-msg { color: rgba(240,234,224,0.7) !important; background: rgba(240,234,224,0.05) !important; }
-      .doni-guide, .doni-guide[data-v-cc093e01] { color: #F0EAE0 !important; background: rgba(240,234,224,0.05) !important; }
-      .card-doni, .card-doni[data-v-cc093e01] { color: #F0EAE0 !important; background: rgba(240,234,224,0.05) !important; }
+      /* 살까말까 스피치버블: 인라인 color:#7D5A3C 오버라이드 */
+      [style*="7D5A3C"] { color: #F0EAE0 !important; }
+      /* card-doni: scoped 우선순위 초과 */
+      html body .card-doni[data-v-cc093e01] { color: #F0EAE0 !important; background: rgba(240,234,224,0.05) !important; }
       .plan-card.skipped { background: rgba(240,234,224,0.04) !important; }
       .plan-card.bought { background: rgba(240,234,224,0.06) !important; }
 
