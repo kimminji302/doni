@@ -189,12 +189,10 @@
       .plan-card.bought { background: rgba(240,234,224,0.06) !important; }
 
       /* 살까말까 이번 달 박스 배경 + 숫자 컬러 통일 */
-      .section-card [style*="flex: 1"],
-      .section-card [style*="flex:1"] {
+      .section-card.fade-up > div:nth-child(2) > div {
         background: rgba(240,234,224,0.08) !important;
       }
-      .section-card [style*="flex: 1"] > div:first-child,
-      .section-card [style*="flex:1"] > div:first-child {
+      .section-card.fade-up > div:nth-child(2) > div > div:first-child {
         color: #F0EAE0 !important;
       }
     }
