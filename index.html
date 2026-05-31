@@ -149,12 +149,14 @@
       }
       html, body { background: #12100C; }
       #auth-overlay { background: #1C1810 !important; }
-      .doni-char, .doni-char img, .doni-char canvas,
-      .login-doni, .login-doni img,
-      #auth-overlay img { filter: invert(1); }
+      .doni-char img, #auth-overlay img {
+        filter: invert(1) brightness(1.4) contrast(1.1) !important;
+      }
+      .nav-icon img, .nav-icon canvas, .nav-icon span, .nav-icon > img {
+        filter: invert(1) brightness(1.4) !important;
+      }
       #auth-overlay, #auth-overlay * { color: #F0EAE0 !important; }
       #auth-overlay button, #auth-overlay button * { color: #3c4043 !important; }
-      .nav-icon, .nav-icon img, .nav-icon canvas { filter: invert(1) brightness(1.1); }
       .nav-item { color: #6A5C4A !important; }
       .nav-item.active { color: #F0EAE0 !important; }
       .login-title, .login-sub, .title-main, .title-sub { color: #F0EAE0 !important; }
