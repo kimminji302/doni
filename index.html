@@ -449,7 +449,7 @@
               const saveBtn = parent.querySelector('.btn-fill');
               if (saveBtn) {
                 const btnRow = saveBtn.parentElement;
-                btnRow.style.cssText = 'display:flex;gap:8px;';
+                btnRow.style.cssText = 'display:flex;flex-direction:row;gap:8px;margin-bottom:40px;';
                 saveBtn.style.cssText = 'flex:1;padding:13px;border:none;background:var(--ink);color:#F0EAE0;border-radius:50px;font-size:13px;font-family:inherit;font-weight:700;cursor:pointer;';
                 const syncBtn = document.createElement('button');
                 syncBtn.id = 'doni-sync-btn';
