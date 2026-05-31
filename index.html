@@ -362,7 +362,8 @@
         const btn = document.getElementById('google-login-btn');
         btn.disabled = true; btn.style.opacity = '0.6';
         const { error } = await sb.auth.signInWithOAuth({
-          provider: 'google', options: { redirectTo: location.origin }
+          provider: 'google',
+          options: { redirectTo: location.origin, queryParams: { prompt: 'select_account' } }
         });
         if (error) {
           const el = document.getElementById('auth-error');
