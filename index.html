@@ -190,9 +190,10 @@
       /* 살까말까 스피치버블: img[src="doni.gif"] 형제 div 구조 선택자 */
       .plan-page img[src="doni.gif"] ~ div,
       .plan-page img[src="doni.gif"] ~ div * { color: #F0EAE0 !important; }
-      /* card-doni: 특이도 최대화 */
-      :is(html) .card-doni,
-      :is(html) .card-doni[data-v-cc093e01] { color: #F0EAE0 !important; background: rgba(240,234,224,0.05) !important; }
+      /* card-doni 컨테이너 배경 */
+      .card-doni, .card-doni[data-v-cc093e01] { background: rgba(240,234,224,0.05) !important; }
+      /* card-doni 내부 인라인 color 오버라이드 */
+      .card-doni > div:last-child { color: #F0EAE0 !important; }
       .plan-card.skipped { background: rgba(240,234,224,0.04) !important; }
       .plan-card.bought { background: rgba(240,234,224,0.06) !important; }
 
