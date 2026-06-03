@@ -142,108 +142,21 @@
     .d-del { background: none !important; border: none !important; font-size: 0 !important; width: 24px !important; height: 24px !important; }
     .d-del::after { content: "×"; font-size: 18px; font-weight: 300; line-height: 1; color: #BDBDBD; }
 
+    /* 라이트모드 고정 - 다크모드 비활성화 */
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #1C1810;
-        --ink: #F0EAE0;
-        --sub: rgba(240,234,224,0.5);
-        --accent: #F0EAE0;
-        --accent-light: rgba(240,234,224,0.1);
-        --line: rgba(240,234,224,0.15);
-        --white: rgba(240,234,224,0.07);
+        --bg: #F9F7F2;
+        --ink: #3D2B1F;
+        --sub: #7D5A3C;
+        --accent: #3D2B1F;
+        --accent-light: rgba(61,43,31,0.08);
+        --line: rgba(61,43,31,0.1);
+        --white: #fff;
         --danger: #E57373;
-        --shadow: 0 4px 20px rgba(0,0,0,.6);
-        --shadow-sm: 0 2px 8px rgba(0,0,0,.4);
+        --shadow: 0 4px 20px rgba(0,0,0,.08);
+        --shadow-sm: 0 2px 8px rgba(0,0,0,.06);
       }
-      html, body { background: #1C1810; }
-
-      /* 오버레이 배경 */
-      #auth-overlay { background: #1C1810 !important; }
-      #auth-overlay, #auth-overlay * { color: #F0EAE0 !important; }
-      #auth-overlay button, #auth-overlay button * { color: #3c4043 !important; }
-
-      /* 모든 선화 이미지 반전 */
-      #auth-overlay img,
-      .doni-char img,
-      .nav-icon img,
-      .profile-icon img,
-      .profile img,
-      .tag-name img,
-      .hi-icon img,
-      .plan-page img[src="doni.gif"] {
-        filter: invert(1) brightness(0.94) sepia(0.12) saturate(0.85) !important;
-        mix-blend-mode: normal !important;
-        opacity: 1 !important;
-      }
-
-      /* 탭 네비게이션 */
-      .bottom-nav { background: rgba(28,24,16,0.97) !important; }
-      .nav-item { color: rgba(240,234,224,0.35) !important; }
-      .nav-item.active { color: #F0EAE0 !important; }
-
-      /* 헤더 */
-      .chat-header { background: rgba(28,24,16,0.97) !important; }
-
-      /* 버튼 */
-      .btn-fill { background: #F0EAE0 !important; color: #1C1810 !important; }
-      .btn-outline { border-color: rgba(240,234,224,0.5) !important; color: #F0EAE0 !important; }
-
-      /* 말풍선, 텍스트 */
-      .speech-bubble { background: #2B271F !important; color: rgba(240,234,224,0.8) !important; }
-      .speech-bubble::after { border-color: #2B271F transparent transparent !important; }
-      .speech-bubble::before { border-color: rgba(240,234,224,0.15) transparent transparent !important; }
-      .title-main, .title-sub { color: #F0EAE0 !important; }
-
-      /* 카드 */
-      .stat-msg { color: rgba(240,234,224,0.7) !important; background: rgba(240,234,224,0.05) !important; }
-      /* 살까말까 스피치버블: img[src="doni.gif"] 형제 div 구조 선택자 */
-      .plan-page img[src="doni.gif"] ~ div,
-      .plan-page img[src="doni.gif"] ~ div * { color: #F0EAE0 !important; }
-      /* card-doni 컨테이너 배경 */
-      .card-doni, .card-doni[data-v-cc093e01] { background: rgba(240,234,224,0.05) !important; }
-      /* card-doni 내부 인라인 color 오버라이드 */
-      .card-doni > div:last-child { color: #F0EAE0 !important; }
-      .plan-card.skipped { background: rgba(240,234,224,0.04) !important; }
-      .plan-card.bought { background: rgba(240,234,224,0.06) !important; }
-
-      /* 살까말까 버튼/텍스트 */
-      .c-btn.buy { color: #1C1810 !important; }
-      .add-fab { color: #1C1810 !important; bottom: 160px !important; }
-
-      /* 로그아웃 버튼 (동적 주입 버튼) */
-      #doni-logout-btn { color: #F0EAE0 !important; border-color: rgba(240,234,224,0.4) !important; }
-
-      /* add-btn + 글씨, add-input 배경 */
-      .add-btn { color: #1C1810 !important; }
-      .add-input { background: rgba(240,234,224,0.08) !important; color: #F0EAE0 !important; }
-
-      /* 살까말까 이번 달 박스 배경 + 숫자 컬러 통일 */
-      .section-card.fade-up > div:nth-child(2) > div {
-        background: rgba(240,234,224,0.08) !important;
-      }
-      .section-card.fade-up > div:nth-child(2) > div > div:first-child {
-        color: #F0EAE0 !important;
-      }
-
-      /* 삭제 버튼 X로 변경 */
-      .d-del { font-size: 0 !important; width: 24px !important; height: 24px !important; }
-      .d-del::after { content: "×"; font-size: 16px; font-weight: 400; line-height: 1; color: var(--danger); }
-
-      /* 심리 분석 모달 시트 */
-      [style*="82vh"] { background: #1C1810 !important; color: #F0EAE0 !important; }
-      [style*="82vh"] * { color: #F0EAE0 !important; }
-      [style*="82vh"] img { filter: invert(1) brightness(0.94) sepia(0.12) saturate(0.85) !important; }
-      [style*="F9F7F2"] { background: rgba(240,234,224,0.08) !important; }
-      [style*="5D4037"] { color: rgba(240,234,224,0.8) !important; }
-      /* 지출 이월 알림 박스 */
-      .section-card.fade-up > div:nth-child(3) { background: rgba(240,234,224,0.08) !important; color: rgba(240,234,224,0.8) !important; }
-      .section-card.fade-up > div:nth-child(3) * { color: rgba(240,234,224,0.8) !important; }
-      /* 저번달 복사 팝업 */
-      .copy-sheet { background: #1C1810 !important; box-shadow: 0 10px 40px rgba(0,0,0,0.6) !important; }
-      .copy-sheet img { filter: invert(1) brightness(0.94) sepia(0.12) saturate(0.85) !important; }
-      .copy-msg, .copy-msg * { color: #F0EAE0 !important; }
-      .b-btn.fill { background: #F0EAE0 !important; color: #1C1810 !important; }
-      .b-btn.outline { border-color: rgba(240,234,224,0.5) !important; color: #F0EAE0 !important; background: transparent !important; }
+      html, body { background: #F9F7F2; color-scheme: light; }
     }
   </style>
 </head>
@@ -438,8 +351,7 @@
               btn.id = 'doni-logout-btn';
               btn.textContent = '로그아웃';
               btn.onclick = window.signOut;
-              const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-              btn.style.cssText = 'position:absolute;top:16px;right:16px;background:none;border:1px solid ' + (isDark ? 'rgba(240,234,224,0.4)' : '#C5B9AD') + ';border-radius:8px;padding:6px 14px;font-family:inherit;font-size:12px;color:' + (isDark ? '#F0EAE0' : '#7D5A3C') + ';cursor:pointer;';
+              btn.style.cssText = 'position:absolute;top:16px;right:16px;background:none;border:1px solid #C5B9AD;border-radius:8px;padding:6px 14px;font-family:inherit;font-size:12px;color:#7D5A3C;cursor:pointer;';
               const parent = el.closest('.page-title')?.parentElement || el.parentElement;
               parent.style.position = 'relative';
               parent.appendChild(btn);
@@ -460,11 +372,10 @@
 
             // 초기화 버튼 (상단 왼쪽)
             if (!document.getElementById('doni-reset-btn')) {
-              const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
               const resetBtn = document.createElement('button');
               resetBtn.id = 'doni-reset-btn';
               resetBtn.textContent = '초기화';
-              resetBtn.style.cssText = 'position:absolute;top:16px;left:16px;background:none;border:1px solid ' + (isDark ? 'rgba(240,234,224,0.4)' : '#C5B9AD') + ';border-radius:8px;padding:6px 14px;font-family:inherit;font-size:12px;color:' + (isDark ? '#F0EAE0' : '#7D5A3C') + ';cursor:pointer;';
+              resetBtn.style.cssText = 'position:absolute;top:16px;left:16px;background:none;border:1px solid #C5B9AD;border-radius:8px;padding:6px 14px;font-family:inherit;font-size:12px;color:#7D5A3C;cursor:pointer;';
               resetBtn.onclick = () => {
                 if (!confirm('모든 데이터를 초기화할까요?')) return;
                 ['doni_exp_v3','doni_set_v3','doni_plan_v3','doni_loaded'].forEach(k => localStorage.removeItem(k));
@@ -475,7 +386,6 @@
 
             // 동기화 버튼 (목표 저장하기 나란히)
             if (!document.getElementById('doni-sync-btn')) {
-              const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
               const saveBtn = parent.querySelector('.btn-fill');
               if (saveBtn) {
                 const btnRow = saveBtn.parentElement;
@@ -484,7 +394,7 @@
                 const syncBtn = document.createElement('button');
                 syncBtn.id = 'doni-sync-btn';
                 syncBtn.textContent = '동기화';
-                syncBtn.style.cssText = 'flex:1;padding:13px;border:1.5px solid ' + (isDark ? 'rgba(240,234,224,0.5)' : 'var(--ink)') + ';background:transparent;color:' + (isDark ? '#F0EAE0' : 'var(--ink)') + ';border-radius:50px;font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;';
+                syncBtn.style.cssText = 'flex:1;padding:13px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);border-radius:50px;font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;';
                 syncBtn.onclick = async () => {
                   const uid = window._currentUser?.id;
                   if (!uid) { alert('로그인이 필요해요.'); return; }
