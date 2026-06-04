@@ -318,12 +318,13 @@
                 const arr = planRes.data.map(p => ({
                   id: p.id, item: p.item, cost: p.cost,
                   tag: p.tag, reason: p.reason,
-                  doniReply: p.doni_reply, status: p.status
+                  doniReply: p.doni_reply, status: p.status,
+                  createdAt: p.created_at
                 }));
                 _origSet(PLAN_KEY, JSON.stringify(arr));
               }
             }
-          } catch(e) { console.error('Supabase load error:', e); }
+          } catch(e) { }
 
           if (!sessionStorage.getItem('doni_loaded')) {
             sessionStorage.setItem('doni_loaded', '1');
