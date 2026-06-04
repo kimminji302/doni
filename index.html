@@ -297,12 +297,15 @@
               sb.from('plans').select('*').eq('user_id', uid)
             ]);
             if (expRes.data && expRes.data.length > 0) {
-              const arr = expRes.data.map(e => ({
-                id: e.id, year: e.year, month: e.month,
-                fullDate: e.full_date, item: e.item,
-                cost: e.cost, tag: e.tag, customHash: e.custom_hash
-              }));
-              _origSet(EXP_KEY, JSON.stringify(arr));
+              const localExp = JSON.parse(localStorage.getItem(EXP_KEY) || '[]');
+              if (expRes.data.length >= localExp.length) {
+                const arr = expRes.data.map(e => ({
+                  id: e.id, year: e.year, month: e.month,
+                  fullDate: e.full_date, item: e.item,
+                  cost: e.cost, tag: e.tag, customHash: e.custom_hash
+                }));
+                _origSet(EXP_KEY, JSON.stringify(arr));
+              }
             }
             if (setRes.data && setRes.data.length > 0) {
               const obj = {};
@@ -310,12 +313,15 @@
               _origSet(SET_KEY, JSON.stringify(obj));
             }
             if (planRes.data && planRes.data.length > 0) {
-              const arr = planRes.data.map(p => ({
-                id: p.id, item: p.item, cost: p.cost,
-                tag: p.tag, reason: p.reason,
-                doniReply: p.doni_reply, status: p.status
-              }));
-              _origSet(PLAN_KEY, JSON.stringify(arr));
+              const localPlans = JSON.parse(localStorage.getItem(PLAN_KEY) || '[]');
+              if (planRes.data.length >= localPlans.length) {
+                const arr = planRes.data.map(p => ({
+                  id: p.id, item: p.item, cost: p.cost,
+                  tag: p.tag, reason: p.reason,
+                  doniReply: p.doni_reply, status: p.status
+                }));
+                _origSet(PLAN_KEY, JSON.stringify(arr));
+              }
             }
           } catch(e) { console.error('Supabase load error:', e); }
 
