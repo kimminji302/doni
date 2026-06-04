@@ -211,7 +211,7 @@
               await sb.from('expenses').delete().eq('user_id', uid);
               if (expenses.length > 0) {
                 const rows = expenses.map(e => ({
-                  id: String(e.id), user_id: uid,
+                  user_id: uid,
                   year: e.year, month: e.month,
                   full_date: e.fullDate || '', item: e.item || '',
                   cost: e.cost || 0, tag: e.tag || '', custom_hash: e.customHash || ''
