@@ -400,7 +400,7 @@
                   if (!uid) { alert('로그인이 필요해요.'); return; }
                   syncBtn.textContent = '동기화 중...';
                   syncBtn.disabled = true;
-                  await loadFromSupabase(uid);
+                  await window.loadFromSupabase(uid);
                   location.reload();
                 };
                 btnRow.appendChild(syncBtn);
