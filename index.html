@@ -206,13 +206,26 @@
         const _origProtoSet = Storage.prototype.setItem;
         const _origSet = _origProtoSet.bind(localStorage);
 
+        function showSyncError() {
+          let toast = document.getElementById('doni-sync-toast');
+          if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'doni-sync-toast';
+            toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#c0392b;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s;';
+            toast.textContent = '저장 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.';
+            document.body.appendChild(toast);
+          }
+          toast.style.opacity = '1';
+          setTimeout(() => { toast.style.opacity = '0'; }, 4000);
+        }
+
         async function syncToSupabase(key, value) {
           const uid = window._currentUser?.id;
-          console.log('[sync] key=', key, 'uid=', uid);
           if (!uid) return;
           try {
             if (key === EXP_KEY) {
               const expenses = JSON.parse(value || '[]');
+              const { data: oldData } = await sb.from('expenses').select('*').eq('user_id', uid);
               await sb.from('expenses').delete().eq('user_id', uid);
               if (expenses.length > 0) {
                 const rows = expenses.map(e => ({
@@ -221,9 +234,18 @@
                   full_date: e.fullDate || '', item: e.item || '',
                   cost: Number(e.cost) || 0, tag: e.tag || '', custom_hash: e.customHash || ''
                 }));
-                console.log('insert rows:', JSON.stringify(rows));
-                const insRes = await sb.from('expenses').insert(rows);
-                console.log('insert result:', JSON.stringify(insRes));
+                const { error } = await sb.from('expenses').insert(rows);
+                if (error) {
+                  if (oldData && oldData.length > 0) {
+                    const restoreRows = oldData.map(e => ({
+                      user_id: e.user_id, year: e.year, month: e.month,
+                      full_date: e.full_date, item: e.item,
+                      cost: e.cost, tag: e.tag, custom_hash: e.custom_hash
+                    }));
+                    await sb.from('expenses').insert(restoreRows);
+                  }
+                  throw error;
+                }
               }
             } else if (key === SET_KEY) {
               const settings = JSON.parse(value || '{}');
@@ -237,6 +259,7 @@
               }
             } else if (key === PLAN_KEY) {
               const plans = JSON.parse(value || '[]');
+              const { data: oldPlans } = await sb.from('plans').select('*').eq('user_id', uid);
               await sb.from('plans').delete().eq('user_id', uid);
               if (plans.length > 0) {
                 const rows = plans.map(p => ({
@@ -245,10 +268,20 @@
                   tag: p.tag || '', reason: p.reason || '',
                   doni_reply: p.doniReply || '', status: p.status || 'thinking'
                 }));
-                await sb.from('plans').insert(rows);
+                const { error } = await sb.from('plans').insert(rows);
+                if (error) {
+                  if (oldPlans && oldPlans.length > 0) {
+                    const restoreRows = oldPlans.map(p => ({
+                      user_id: p.user_id, item: p.item, cost: p.cost,
+                      tag: p.tag, reason: p.reason, doni_reply: p.doni_reply, status: p.status
+                    }));
+                    await sb.from('plans').insert(restoreRows);
+                  }
+                  throw error;
+                }
               }
             }
-          } catch(e) { console.error('Supabase sync error:', e); }
+          } catch(e) { showSyncError(); }
         }
 
         Storage.prototype.setItem = function(key, value) {
