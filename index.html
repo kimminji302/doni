@@ -249,7 +249,7 @@
           syncToSupabase(key, value);
         };
 
-        async function loadFromSupabase(uid) {
+        window.loadFromSupabase = async function loadFromSupabase(uid) {
           try {
             const [expRes, setRes, planRes] = await Promise.all([
               sb.from('expenses').select('*').eq('user_id', uid),
