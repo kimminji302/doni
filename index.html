@@ -204,6 +204,7 @@
 
         async function syncToSupabase(key, value) {
           const uid = window._currentUser?.id;
+          console.log('[sync] key=', key, 'uid=', uid);
           if (!uid) return;
           try {
             if (key === EXP_KEY) {
