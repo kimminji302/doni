@@ -203,7 +203,7 @@
         const EXP_KEY  = 'doni_exp_v3';
         const SET_KEY  = 'doni_set_v3';
         const PLAN_KEY = 'doni_plan_v3';
-        const _origSet = localStorage.setItem.bind(localStorage);
+        const _origSet = Storage.prototype.setItem.bind(localStorage);
 
         async function syncToSupabase(key, value) {
           const uid = window._currentUser?.id;
@@ -250,9 +250,9 @@
           } catch(e) { console.error('Supabase sync error:', e); }
         }
 
-        localStorage.setItem = function(key, value) {
+        Storage.prototype.setItem = function(key, value) {
           _origSet(key, value);
-          syncToSupabase(key, value);
+          if (this === localStorage) syncToSupabase(key, value);
         };
 
         window.loadFromSupabase = async function loadFromSupabase(uid) {
