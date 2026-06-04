@@ -212,9 +212,9 @@
               if (expenses.length > 0) {
                 const rows = expenses.map(e => ({
                   user_id: uid,
-                  year: e.year, month: e.month,
+                  year: Number(e.year), month: Number(e.month),
                   full_date: e.fullDate || '', item: e.item || '',
-                  cost: e.cost || 0, tag: e.tag || '', custom_hash: e.customHash || ''
+                  cost: Number(e.cost) || 0, tag: e.tag || '', custom_hash: e.customHash || ''
                 }));
                 await sb.from('expenses').insert(rows);
               }
@@ -233,8 +233,8 @@
               await sb.from('plans').delete().eq('user_id', uid);
               if (plans.length > 0) {
                 const rows = plans.map(p => ({
-                  id: String(p.id), user_id: uid,
-                  item: p.item || '', cost: p.cost || 0,
+                  user_id: uid,
+                  item: p.item || '', cost: Number(p.cost) || 0,
                   tag: p.tag || '', reason: p.reason || '',
                   doni_reply: p.doniReply || '', status: p.status || 'thinking'
                 }));
