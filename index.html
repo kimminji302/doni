@@ -216,7 +216,9 @@
                   full_date: e.fullDate || '', item: e.item || '',
                   cost: Number(e.cost) || 0, tag: e.tag || '', custom_hash: e.customHash || ''
                 }));
-                await sb.from('expenses').insert(rows);
+                console.log('insert rows:', JSON.stringify(rows));
+                const insRes = await sb.from('expenses').insert(rows);
+                console.log('insert result:', JSON.stringify(insRes));
               }
             } else if (key === SET_KEY) {
               const settings = JSON.parse(value || '{}');
