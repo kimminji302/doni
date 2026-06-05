@@ -451,11 +451,11 @@
                 };
                 const btnRow = saveBtn.parentElement;
                 btnRow.style.cssText = 'display:flex;flex-direction:row;gap:8px;margin-bottom:40px;';
-                saveBtn.style.cssText = 'flex:1;padding:13px;border:1.5px solid var(--sub);background:transparent;color:var(--ink);border-radius:50px;font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;';
+                saveBtn.style.cssText = 'flex:1;padding:13px;border:1px solid var(--line);background:transparent;color:var(--sub);border-radius:50px;font-size:13px;font-family:inherit;cursor:pointer;';
                 const syncBtn = document.createElement('button');
                 syncBtn.id = 'doni-sync-btn';
                 syncBtn.textContent = '동기화';
-                syncBtn.style.cssText = 'flex:1;padding:13px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);border-radius:50px;font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;';
+                syncBtn.style.cssText = 'flex:1;padding:13px;border:1px solid var(--line);background:transparent;color:var(--sub);border-radius:50px;font-size:13px;font-family:inherit;cursor:pointer;';
                 syncBtn.onclick = async () => {
                   const uid = window._currentUser?.id;
                   if (!uid) { alert('로그인이 필요해요.'); return; }
