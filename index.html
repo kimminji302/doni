@@ -135,6 +135,9 @@
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
+    /* 한국어 줄바꿈 전체 적용 */
+    * { word-break: keep-all; }
+
     /* 처음으로 버튼 항상 숨김 */
     .btn-text { display: none !important; }
 
@@ -345,12 +348,6 @@
               _origSet(PLAN_KEY, JSON.stringify(arr));
             }
           } catch(e) { console.error('Supabase load error:', e); }
-
-          if (!sessionStorage.getItem('doni_loaded')) {
-            sessionStorage.setItem('doni_loaded', '1');
-            window.location.reload();
-            return false;
-          }
           return true;
         }
         // ───────────────────────────────────────────────────────
@@ -407,7 +404,6 @@
         };
 
         window.signOut = async function() {
-          sessionStorage.removeItem('doni_loaded');
           await sb.auth.signOut();
         };
       }
@@ -483,7 +479,7 @@
                 saveBtn.onclick = async () => {
                   const ok = await window.doniConfirm('모든 데이터를 초기화할까요?');
                   if (!ok) return;
-                  ['doni_exp_v3','doni_set_v3','doni_plan_v3','doni_loaded'].forEach(k => localStorage.removeItem(k));
+                  ['doni_exp_v3','doni_set_v3','doni_plan_v3'].forEach(k => localStorage.removeItem(k));
                   location.reload();
                 };
                 const btnRow = saveBtn.parentElement;
