@@ -412,29 +412,48 @@
             const parent = el.closest('.page-title')?.parentElement || el.parentElement;
             parent.style.position = 'relative';
 
-            // 초기화 버튼 (상단 왼쪽)
-            if (!document.getElementById('doni-reset-btn')) {
-              const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-              const resetBtn = document.createElement('button');
-              resetBtn.id = 'doni-reset-btn';
-              resetBtn.textContent = '초기화';
-              resetBtn.style.cssText = 'position:absolute;top:16px;left:16px;background:none;border:1px solid ' + (isDark ? 'rgba(240,234,224,0.4)' : '#C5B9AD') + ';border-radius:8px;padding:6px 14px;font-family:inherit;font-size:12px;color:' + (isDark ? '#F0EAE0' : '#7D5A3C') + ';cursor:pointer;';
-              resetBtn.onclick = () => {
-                if (!confirm('모든 데이터를 초기화할까요?')) return;
-                ['doni_exp_v3','doni_set_v3','doni_plan_v3','doni_loaded'].forEach(k => localStorage.removeItem(k));
-                location.reload();
-              };
-              parent.appendChild(resetBtn);
+            // 다크모드 토글 아이콘 (상단 왼쪽, 원래 초기화 자리)
+            if (!document.getElementById('doni-theme-btn-left')) {
+              const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+              const themeBtn = document.createElement('button');
+              themeBtn.id = 'doni-theme-btn-left';
+              themeBtn.innerHTML = isDark
+                ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+                : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+              themeBtn.onclick = window.toggleTheme;
+              themeBtn.style.cssText = 'position:absolute;top:14px;left:16px;background:none;border:none;padding:4px;cursor:pointer;color:var(--sub);display:flex;align-items:center;justify-content:center;';
+              parent.appendChild(themeBtn);
             }
 
-            // 동기화 버튼 (목표 저장하기 나란히)
+            // 입력 바 오른쪽에 저장 버튼 추가 + 버튼 행 초기화/동기화로 변경
             if (!document.getElementById('doni-sync-btn')) {
               const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+              // 입력 바에 저장 버튼 추가
+              const inputEl = parent.querySelector('.clean-input');
+              if (inputEl && !document.getElementById('doni-inline-save-btn')) {
+                const inputWrap = document.createElement('div');
+                inputWrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
+                inputEl.parentElement.insertBefore(inputWrap, inputEl);
+                inputWrap.appendChild(inputEl);
+                const inlineSaveBtn = document.createElement('button');
+                inlineSaveBtn.id = 'doni-inline-save-btn';
+                inlineSaveBtn.textContent = '저장';
+                inlineSaveBtn.style.cssText = 'flex-shrink:0;padding:8px 14px;border:none;background:var(--ink);color:var(--bg);border-radius:50px;font-size:13px;font-family:inherit;font-weight:700;cursor:pointer;';
+                inlineSaveBtn.onclick = () => { parent.querySelector('.btn-fill')?.click(); };
+                inputWrap.appendChild(inlineSaveBtn);
+              }
+              // 버튼 행: 목표 저장하기 → 초기화로 교체
               const saveBtn = parent.querySelector('.btn-fill');
               if (saveBtn) {
+                saveBtn.textContent = '초기화';
+                saveBtn.onclick = () => {
+                  if (!confirm('모든 데이터를 초기화할까요?')) return;
+                  ['doni_exp_v3','doni_set_v3','doni_plan_v3','doni_loaded'].forEach(k => localStorage.removeItem(k));
+                  location.reload();
+                };
                 const btnRow = saveBtn.parentElement;
                 btnRow.style.cssText = 'display:flex;flex-direction:row;gap:8px;margin-bottom:40px;';
-                saveBtn.style.cssText = 'flex:1;padding:13px;border:none;background:var(--ink);color:#F0EAE0;border-radius:50px;font-size:13px;font-family:inherit;font-weight:700;cursor:pointer;';
+                saveBtn.style.cssText = 'flex:1;padding:13px;border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:50px;font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;';
                 const syncBtn = document.createElement('button');
                 syncBtn.id = 'doni-sync-btn';
                 syncBtn.textContent = '동기화';
@@ -464,38 +483,13 @@
         document.querySelector('meta[name="theme-color"]').content = next === 'dark' ? '#000000' : '#F9F7F2';
         const origSet = Storage.prototype.setItem;
         origSet.call(localStorage, 'doni_theme', next);
-        const btn = document.getElementById('doni-theme-btn');
-        if (btn) btn.innerHTML = next === 'dark'
-          ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
-          : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+        const sunSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+        const moonSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+        document.getElementById('doni-theme-btn-left') && (document.getElementById('doni-theme-btn-left').innerHTML = next === 'dark' ? sunSvg : moonSvg);
       };
 
-      // 설정탭에 다크모드 토글 버튼 주입
-      function injectThemeToggle() {
-        const observer = new MutationObserver(() => {
-          if (document.getElementById('doni-theme-btn')) return;
-          const titles = document.querySelectorAll('.page-title');
-          titles.forEach(el => {
-            if (el.textContent.trim() !== '이달의 약속') return;
-            const parent = el.closest('.page-title')?.parentElement || el.parentElement;
-            if (document.getElementById('doni-theme-btn')) return;
-            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            const btn = document.createElement('button');
-            btn.id = 'doni-theme-btn';
-            btn.innerHTML = isDark
-              ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
-              : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-            btn.onclick = window.toggleTheme;
-            btn.style.cssText = 'position:absolute;top:14px;right:74px;background:none;border:none;padding:4px;cursor:pointer;color:var(--sub);display:flex;align-items:center;justify-content:center;';
-            parent.style.position = 'relative';
-            parent.appendChild(btn);
-          });
-        });
-        observer.observe(document.getElementById('app'), { childList: true, subtree: true });
-      }
 
       initSupabase();
-      injectThemeToggle();
     })();
   </script>
 </body>
