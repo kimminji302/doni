@@ -141,9 +141,9 @@
     /* 한국어 줄바꿈 전체 적용 */
     * { word-break: keep-all; }
 
-    /* 데스크톱에서 FAB 버튼이 앱 컨테이너 안에 위치하도록 */
+    /* FAB 버튼을 앱 컨테이너 기준으로 고정 (데스크톱 nav 겹침 방지) */
     @media (min-width: 500px) {
-      .add-fab[data-v-cc093e01] { right: calc(50% - 375px/2 + 20px) !important; }
+      .add-fab[data-v-cc093e01] { position: absolute !important; right: 20px !important; bottom: 90px !important; }
     }
 
     /* 처음으로 버튼 항상 숨김 */
