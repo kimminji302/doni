@@ -405,7 +405,7 @@
       function injectLogoutButton() {
         if (document.getElementById('doni-logout-btn')) return;
         const observer = new MutationObserver(() => {
-          if (document.getElementById('doni-logout-btn')) return;
+          if (document.getElementById('doni-logout-btn')) { observer.disconnect(); return; }
           const titles = document.querySelectorAll('.page-title');
           titles.forEach(el => {
             if (el.textContent.trim() === '이달의 약속') {
@@ -417,6 +417,7 @@
               const parent = el.closest('.page-title')?.parentElement || el.parentElement;
               parent.style.position = 'relative';
               parent.appendChild(btn);
+              observer.disconnect();
             }
           });
         });
@@ -426,6 +427,9 @@
       // 설정탭에 동기화/초기화 버튼 주입
       function injectSettingButtons() {
         const observer = new MutationObserver(() => {
+          if (document.getElementById('doni-theme-btn-left') && document.getElementById('doni-sync-btn')) {
+            observer.disconnect(); return;
+          }
           const titles = document.querySelectorAll('.page-title');
           titles.forEach(el => {
             if (el.textContent.trim() !== '이달의 약속') return;
