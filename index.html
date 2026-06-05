@@ -177,7 +177,7 @@
     [data-theme="dark"] .profile img,
     [data-theme="dark"] .tag-name img,
     [data-theme="dark"] .hi-icon img,
-    [data-theme="dark"] img[src="doni.gif"] { filter: invert(1) !important; mix-blend-mode: normal !important; opacity: 1 !important; }
+    [data-theme="dark"] img[src="doni.gif"] { filter: invert(1) brightness(1.15) !important; mix-blend-mode: normal !important; opacity: 1 !important; }
     [data-theme="dark"] .bottom-nav { background: #000000 !important; }
     [data-theme="dark"] .nav-item { color: #555 !important; }
     [data-theme="dark"] .nav-item.active { color: #FFFFFF !important; }
@@ -226,15 +226,32 @@
     .doni-modal-btn-ok { background:var(--ink);color:var(--bg); }
   </style>
   <script>
+    // Service Worker 등록
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
+
+    // 테마 초기화 (FOUC 방지 — DOMContentLoaded 전 즉시 실행)
     (function() {
-      var t = localStorage.getItem('doni_theme') || 'light';
-      if (t === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
+      function applyTheme(theme) {
+        var isDark = theme === 'dark' ||
+          (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        var attr = isDark ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', attr);
         var cs = document.querySelector('meta[name="color-scheme"]');
-        if (cs) cs.content = 'dark';
+        if (cs) cs.content = attr;
         var tc = document.querySelector('meta[name="theme-color"]');
-        if (tc) tc.content = '#000000';
+        if (tc) tc.content = isDark ? '#000000' : '#F9F7F2';
       }
+      window._applyTheme = applyTheme;
+      var saved = localStorage.getItem('doni_theme') || 'system';
+      applyTheme(saved);
+
+      // OS 다크모드 변경 시 실시간 반영 (시스템 모드일 때만)
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+        var cur = localStorage.getItem('doni_theme') || 'system';
+        if (cur === 'system') applyTheme('system');
+      });
     })();
   </script>
 </head>
@@ -507,12 +524,16 @@
 
             // 다크모드 토글 아이콘 (상단 왼쪽, 원래 초기화 자리)
             if (!document.getElementById('doni-theme-btn-left')) {
-              const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+              const curTheme = localStorage.getItem('doni_theme') || 'system';
+              const svgMap = {
+                white: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+                dark:  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+                system:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+              };
               const themeBtn = document.createElement('button');
               themeBtn.id = 'doni-theme-btn-left';
-              themeBtn.innerHTML = isDark
-                ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
-                : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+              themeBtn.innerHTML = svgMap[curTheme] || svgMap.system;
+              themeBtn.title = '테마 변경 (화이트 → 다크 → 시스템)';
               themeBtn.onclick = window.toggleTheme;
               themeBtn.style.cssText = 'position:absolute;top:14px;left:16px;background:none;border:none;padding:4px;cursor:pointer;color:var(--sub);display:flex;align-items:center;justify-content:center;';
               parent.appendChild(themeBtn);
@@ -617,20 +638,20 @@
         });
       };
 
-      // 다크모드 토글
+      // 테마 설정 (white / dark / system)
+      const _themeSvg = {
+        white: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+        dark:  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+        system:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+      };
       window.toggleTheme = function() {
-        const cur = document.documentElement.getAttribute('data-theme') || 'light';
-        const next = cur === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        const csMeta = document.querySelector('meta[name="color-scheme"]');
-        if (csMeta) csMeta.content = next;
-        const tcMeta = document.querySelector('meta[name="theme-color"]');
-        if (tcMeta) tcMeta.content = next === 'dark' ? '#000000' : '#F9F7F2';
-        const origSet = Storage.prototype.setItem;
-        origSet.call(localStorage, 'doni_theme', next);
-        const sunSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
-        const moonSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-        document.getElementById('doni-theme-btn-left') && (document.getElementById('doni-theme-btn-left').innerHTML = next === 'dark' ? sunSvg : moonSvg);
+        const order = ['white', 'dark', 'system'];
+        const cur = localStorage.getItem('doni_theme') || 'system';
+        const next = order[(order.indexOf(cur) + 1) % order.length];
+        Storage.prototype.setItem.call(localStorage, 'doni_theme', next);
+        window._applyTheme(next);
+        const btn = document.getElementById('doni-theme-btn-left');
+        if (btn) btn.innerHTML = _themeSvg[next];
       };
 
 
