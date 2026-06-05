@@ -255,6 +255,7 @@
           return;
         }
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        window._sb = sb;
         window._supabase = sb;
 
         // ── localStorage intercept ──────────────────────────────
@@ -484,9 +485,9 @@
                   syncBtn.disabled = true;
                   try {
                     const [expRes, setRes, planRes] = await Promise.all([
-                      sb.from('expenses').select('*').eq('user_id', uid),
-                      sb.from('monthly_settings').select('*').eq('user_id', uid),
-                      sb.from('plans').select('*').eq('user_id', uid)
+                      window._sb.from('expenses').select('*').eq('user_id', uid),
+                      window._sb.from('monthly_settings').select('*').eq('user_id', uid),
+                      window._sb.from('plans').select('*').eq('user_id', uid)
                     ]);
                     const errs = [expRes.error, setRes.error, planRes.error].filter(Boolean);
                     if (errs.length > 0) throw new Error(errs[0].message);
