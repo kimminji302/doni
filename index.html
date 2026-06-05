@@ -6,7 +6,7 @@
   <meta property="og:title" content="돈이와 함께한 모든 순간들">
   <meta property="og:description" content="단순한 소비를 넘어, 가치 있는 순간을 기록하세요. Don't Worry, Be Happy">
   <meta property="og:image" content="https://doniapp.kr/th_01.jpg">
-  <meta name="color-scheme" content="light dark">
+  <meta name="color-scheme" content="light">
   <title>돈이와 함께한 모든 순간들</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="home.png">
@@ -142,100 +142,57 @@
     .d-del { background: none !important; border: none !important; font-size: 0 !important; width: 24px !important; height: 24px !important; }
     .d-del::after { content: "×"; font-size: 18px; font-weight: 300; line-height: 1; color: #BDBDBD; }
 
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #1C1810;
-        --ink: #F0EAE0;
-        --sub: rgba(240,234,224,0.5);
-        --accent: #F0EAE0;
-        --accent-light: rgba(240,234,224,0.1);
-        --line: rgba(240,234,224,0.15);
-        --white: rgba(240,234,224,0.07);
-        --danger: #E57373;
-        --shadow: 0 4px 20px rgba(0,0,0,.6);
-        --shadow-sm: 0 2px 8px rgba(0,0,0,.4);
-      }
-      html, body { background: #1C1810; }
-
-      /* 오버레이 배경 */
-      #auth-overlay { background: #1C1810 !important; }
-      #auth-overlay, #auth-overlay * { color: #F0EAE0 !important; }
-      #auth-overlay button, #auth-overlay button * { color: #3c4043 !important; }
-
-      /* 모든 선화 이미지 반전 */
-      #auth-overlay img,
-      .doni-char img,
-      .nav-icon img,
-      .profile-icon img,
-      .profile img,
-      .tag-name img,
-      .hi-icon img,
-      .plan-page img[src="doni.gif"] {
-        filter: invert(1) brightness(0.94) sepia(0.12) saturate(0.85) !important;
-        mix-blend-mode: normal !important;
-        opacity: 1 !important;
-      }
-
-      /* 탭 네비게이션 */
-      .bottom-nav { background: rgba(28,24,16,0.97) !important; }
-      .nav-item { color: rgba(240,234,224,0.35) !important; }
-      .nav-item.active { color: #F0EAE0 !important; }
-
-      /* 헤더 */
-      .chat-header { background: rgba(28,24,16,0.97) !important; }
-
-      /* 버튼 */
-      .btn-fill { background: #F0EAE0 !important; color: #1C1810 !important; }
-      .btn-outline { border-color: rgba(240,234,224,0.5) !important; color: #F0EAE0 !important; }
-
-      /* 말풍선, 텍스트 */
-      .speech-bubble { background: #2B271F !important; color: rgba(240,234,224,0.8) !important; }
-      .speech-bubble::after { border-color: #2B271F transparent transparent !important; }
-      .speech-bubble::before { border-color: rgba(240,234,224,0.15) transparent transparent !important; }
-      .title-main, .title-sub { color: #F0EAE0 !important; }
-
-      /* 카드 */
-      .stat-msg { color: rgba(240,234,224,0.7) !important; background: rgba(240,234,224,0.05) !important; }
-      /* 살까말까 스피치버블: img[src="doni.gif"] 형제 div 구조 선택자 */
-      .plan-page img[src="doni.gif"] ~ div,
-      .plan-page img[src="doni.gif"] ~ div * { color: #F0EAE0 !important; }
-      /* card-doni 컨테이너 배경 */
-      .card-doni, .card-doni[data-v-cc093e01] { background: rgba(240,234,224,0.05) !important; }
-      /* card-doni 내부 인라인 color 오버라이드 */
-      .card-doni > div:last-child { color: #F0EAE0 !important; }
-      .plan-card.skipped { background: rgba(240,234,224,0.04) !important; }
-      .plan-card.bought { background: rgba(240,234,224,0.06) !important; }
-
-      /* 살까말까 버튼/텍스트 */
-      .c-btn.buy { color: #1C1810 !important; }
-      .add-fab { color: #1C1810 !important; bottom: 160px !important; }
-
-      /* 로그아웃 버튼 (동적 주입 버튼) */
-      #doni-logout-btn { color: #F0EAE0 !important; border-color: rgba(240,234,224,0.4) !important; }
-
-      /* add-btn + 글씨, add-input 배경 */
-      .add-btn { color: #1C1810 !important; }
-      .add-input { background: rgba(240,234,224,0.08) !important; color: #F0EAE0 !important; }
-
-      /* 살까말까 이번 달 박스 배경 + 숫자 컬러 통일 */
-      .section-card.fade-up > div:nth-child(2) > div {
-        background: rgba(240,234,224,0.08) !important;
-      }
-      .section-card.fade-up > div:nth-child(2) > div > div:first-child {
-        color: #F0EAE0 !important;
-      }
-
-      /* 삭제 버튼 X로 변경 */
-      .d-del { font-size: 0 !important; width: 24px !important; height: 24px !important; }
-      .d-del::after { content: "×"; font-size: 16px; font-weight: 400; line-height: 1; color: var(--danger); }
-
-      /* 심리 분석 모달 시트 */
-      [style*="82vh"] { background: #1C1810 !important; color: #F0EAE0 !important; }
-      [style*="82vh"] * { color: #F0EAE0 !important; }
-      [style*="82vh"] img { filter: invert(1) brightness(0.94) sepia(0.12) saturate(0.85) !important; }
-      [style*="F9F7F2"] { background: rgba(240,234,224,0.08) !important; }
+    [data-theme="dark"] {
+      --bg: #000000;
+      --ink: #FFFFFF;
+      --sub: #888888;
+      --accent: #E8342A;
+      --accent-light: rgba(232,52,42,0.15);
+      --line: rgba(255,255,255,0.12);
+      --white: #111111;
+      --danger: #E57373;
+      --shadow: 0 4px 20px rgba(0,0,0,0.6);
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.5);
     }
+    [data-theme="dark"] html, [data-theme="dark"] body { background: #000000; color-scheme: dark; }
+    [data-theme="dark"] #auth-overlay { background: #000000 !important; }
+    [data-theme="dark"] #auth-overlay h1,
+    [data-theme="dark"] #auth-overlay p { color: #FFFFFF !important; }
+    [data-theme="dark"] img[src$=".gif"] { filter: invert(1) !important; mix-blend-mode: normal !important; opacity: 1 !important; }
+    [data-theme="dark"] .bottom-nav { background: #000000 !important; }
+    [data-theme="dark"] .nav-item { color: #555 !important; }
+    [data-theme="dark"] .nav-item.active { color: #FFFFFF !important; }
+    [data-theme="dark"] .chat-header { background: #111111 !important; }
+    [data-theme="dark"] .btn-fill { background: #FFFFFF !important; color: #000000 !important; }
+    [data-theme="dark"] .btn-outline { border-color: rgba(255,255,255,0.3) !important; color: #FFFFFF !important; }
+    [data-theme="dark"] .speech-bubble { background: #111111 !important; color: #FFFFFF !important; }
+    [data-theme="dark"] .speech-bubble::after { border-color: #111111 transparent transparent !important; }
+    [data-theme="dark"] .speech-bubble::before { border-color: rgba(255,255,255,0.12) transparent transparent !important; }
+    [data-theme="dark"] .title-main, [data-theme="dark"] .title-sub { color: #FFFFFF !important; }
+    [data-theme="dark"] .stat-msg { color: rgba(255,255,255,0.7) !important; background: rgba(255,255,255,0.05) !important; }
+    [data-theme="dark"] .card-doni { background: rgba(255,255,255,0.05) !important; color: #FFFFFF !important; }
+    [data-theme="dark"] .card-doni > div:last-child { color: #FFFFFF !important; }
+    [data-theme="dark"] .plan-card.skipped { background: rgba(255,255,255,0.03) !important; }
+    [data-theme="dark"] .plan-card.bought { background: rgba(255,255,255,0.05) !important; }
+    [data-theme="dark"] .c-btn.buy { color: #000000 !important; }
+    [data-theme="dark"] .add-fab { color: #000000 !important; }
+    [data-theme="dark"] #doni-logout-btn,
+    [data-theme="dark"] #doni-reset-btn,
+    [data-theme="dark"] #doni-sync-btn { color: #FFFFFF !important; border-color: rgba(255,255,255,0.3) !important; }
+    [data-theme="dark"] .add-btn { color: #000000 !important; }
+    [data-theme="dark"] .add-input { background: rgba(255,255,255,0.08) !important; color: #FFFFFF !important; }
+    [data-theme="dark"] [style*="82vh"] { background: #000000 !important; color: #FFFFFF !important; }
+    [data-theme="dark"] [style*="82vh"] * { color: #FFFFFF !important; }
+    [data-theme="dark"] [style*="82vh"] img { filter: invert(1) !important; }
+    [data-theme="dark"] [style*="F9F7F2"] { background: rgba(255,255,255,0.05) !important; }
+    [data-theme="dark"] #doni-theme-btn { color: #FFFFFF !important; border-color: rgba(255,255,255,0.3) !important; }
   </style>
+  <script>
+    (function() {
+      var t = localStorage.getItem('doni_theme') || 'light';
+      if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+  </script>
 </head>
 <body>
   <div id="auth-overlay" style="display:flex;position:fixed;inset:0;z-index:9999;background:#F9F7F2;flex-direction:column;align-items:center;justify-content:center;font-family:'Gowun Batang',serif;">
@@ -491,7 +448,43 @@
         observer.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
 
+      // 다크모드 토글
+      window.toggleTheme = function() {
+        const cur = document.documentElement.getAttribute('data-theme') || 'light';
+        const next = cur === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        document.querySelector('meta[name="color-scheme"]').content = next;
+        document.querySelector('meta[name="theme-color"]').content = next === 'dark' ? '#000000' : '#F9F7F2';
+        const origSet = Storage.prototype.setItem;
+        origSet.call(localStorage, 'doni_theme', next);
+        const btn = document.getElementById('doni-theme-btn');
+        if (btn) btn.textContent = next === 'dark' ? '☀️ 라이트모드' : '🌙 다크모드';
+      };
+
+      // 설정탭에 다크모드 토글 버튼 주입
+      function injectThemeToggle() {
+        const observer = new MutationObserver(() => {
+          if (document.getElementById('doni-theme-btn')) return;
+          const titles = document.querySelectorAll('.page-title');
+          titles.forEach(el => {
+            if (el.textContent.trim() !== '이달의 약속') return;
+            const parent = el.closest('.page-title')?.parentElement || el.parentElement;
+            const btnGroup = parent.querySelector('.btn-group');
+            if (!btnGroup || document.getElementById('doni-theme-btn')) return;
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const btn = document.createElement('button');
+            btn.id = 'doni-theme-btn';
+            btn.textContent = isDark ? '☀️ 라이트모드' : '🌙 다크모드';
+            btn.onclick = window.toggleTheme;
+            btn.style.cssText = 'width:100%;padding:13px;border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:50px;font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;margin-bottom:8px;';
+            btnGroup.insertBefore(btn, btnGroup.firstChild);
+          });
+        });
+        observer.observe(document.getElementById('app'), { childList: true, subtree: true });
+      }
+
       initSupabase();
+      injectThemeToggle();
     })();
   </script>
 </body>
