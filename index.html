@@ -293,7 +293,7 @@
           if (!toast) {
             toast = document.createElement('div');
             toast.id = 'doni-sync-toast';
-            toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#c0392b;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s;';
+            toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--danger);color:var(--white);padding:10px 20px;border-radius:20px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s;';
             toast.textContent = '저장 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.';
             document.body.appendChild(toast);
           }
@@ -447,6 +447,8 @@
           const btn = document.getElementById('google-login-btn');
           btn.disabled = true;
           btn.style.opacity = '0.7';
+          const origContent = btn.innerHTML;
+          btn.innerHTML = '<span>로그인 중...</span>';
           const { error } = await sb.auth.signInWithOAuth({
             provider: 'google',
             options: { redirectTo: 'https://doniapp.kr', queryParams: { prompt: 'select_account' } }
@@ -457,6 +459,13 @@
             errEl.style.display = 'block';
             btn.disabled = false;
             btn.style.opacity = '1';
+            btn.innerHTML = origContent;
+          } else {
+            setTimeout(() => {
+              btn.disabled = false;
+              btn.style.opacity = '1';
+              btn.innerHTML = origContent;
+            }, 8000);
           }
         };
 
