@@ -274,7 +274,7 @@
           if (!uid) return;
           try {
             if (key === EXP_KEY) {
-              const expenses = JSON.parse(value || '[]');
+              let expenses; try { expenses = JSON.parse(value || '[]'); } catch(e) { expenses = []; }
               await sb.from('expenses').delete().eq('user_id', uid);
               if (expenses.length > 0) {
                 const rows = expenses.map(e => ({
@@ -286,7 +286,7 @@
                 await sb.from('expenses').insert(rows);
               }
             } else if (key === SET_KEY) {
-              const settings = JSON.parse(value || '{}');
+              let settings; try { settings = JSON.parse(value || '{}'); } catch(e) { settings = {}; }
               for (const [ym, data] of Object.entries(settings)) {
                 const parts = ym.split('-');
                 const year = Number(parts[0]), month = Number(parts[1]);
@@ -296,7 +296,7 @@
                     { onConflict: 'user_id,year,month' });
               }
             } else if (key === PLAN_KEY) {
-              const plans = JSON.parse(value || '[]');
+              let plans; try { plans = JSON.parse(value || '[]'); } catch(e) { plans = []; }
               await sb.from('plans').delete().eq('user_id', uid);
               if (plans.length > 0) {
                 const rows = plans.map(p => ({
