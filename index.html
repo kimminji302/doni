@@ -186,6 +186,8 @@
     [data-theme="dark"] #doni-logout-btn,
     [data-theme="dark"] #doni-reset-btn,
     [data-theme="dark"] #doni-sync-btn { color: #FFFFFF !important; border-color: rgba(255,255,255,0.3) !important; }
+    [data-theme="dark"] [style*="7D5A3C"],
+    [data-theme="dark"] [style*="7d5a3c"] { color: #FFFFFF !important; }
     [data-theme="dark"] .add-btn { color: #000000 !important; }
     [data-theme="dark"] .add-input { background: rgba(255,255,255,0.08) !important; color: #FFFFFF !important; }
     [data-theme="dark"] [style*="82vh"] { background: #000000 !important; color: #FFFFFF !important; }
@@ -451,7 +453,7 @@
                 };
                 const btnRow = saveBtn.parentElement;
                 btnRow.style.cssText = 'display:flex;flex-direction:row;gap:8px;margin-bottom:40px;';
-                saveBtn.style.cssText = 'flex:1;padding:13px;border:1px solid var(--line);background:transparent;color:var(--sub);border-radius:50px;font-size:13px;font-family:inherit;cursor:pointer;';
+                saveBtn.style.cssText = 'flex:1 !important;padding:13px !important;border:1px solid var(--line) !important;background:transparent !important;color:var(--sub) !important;border-radius:50px !important;font-size:13px !important;font-family:inherit !important;font-weight:normal !important;cursor:pointer !important;';
                 const syncBtn = document.createElement('button');
                 syncBtn.id = 'doni-sync-btn';
                 syncBtn.textContent = '동기화';
