@@ -522,21 +522,38 @@
             const parent = el.closest('.page-title')?.parentElement || el.parentElement;
             parent.style.position = 'relative';
 
-            // 다크모드 토글 아이콘 (상단 왼쪽, 원래 초기화 자리)
-            if (!document.getElementById('doni-theme-btn-left')) {
+            // 화면 테마 선택 (화이트 / 다크 / 시스템)
+            if (!document.getElementById('doni-theme-selector')) {
               const curTheme = localStorage.getItem('doni_theme') || 'system';
-              const svgMap = {
-                white: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
-                dark:  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
-                system:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
-              };
-              const themeBtn = document.createElement('button');
-              themeBtn.id = 'doni-theme-btn-left';
-              themeBtn.innerHTML = svgMap[curTheme] || svgMap.system;
-              themeBtn.title = '테마 변경 (화이트 → 다크 → 시스템)';
-              themeBtn.onclick = window.toggleTheme;
-              themeBtn.style.cssText = 'position:absolute;top:14px;left:16px;background:none;border:none;padding:4px;cursor:pointer;color:var(--sub);display:flex;align-items:center;justify-content:center;';
-              parent.appendChild(themeBtn);
+              const selectorWrap = document.createElement('div');
+              selectorWrap.id = 'doni-theme-selector';
+              selectorWrap.style.cssText = 'display:flex;gap:8px;margin:0 16px 16px;';
+              const options = [
+                { key: 'white', label: '☀️ 라이트' },
+                { key: 'dark',  label: '🌙 다크' },
+                { key: 'system',label: '📱 시스템' },
+              ];
+              options.forEach(({ key, label }) => {
+                const btn = document.createElement('button');
+                btn.dataset.themeKey = key;
+                btn.textContent = label;
+                const isActive = curTheme === key;
+                btn.style.cssText = `flex:1;padding:10px 4px;border-radius:50px;font-size:13px;font-family:inherit;cursor:pointer;transition:all 0.2s;border:1px solid ${isActive ? 'var(--ink)' : 'var(--line)'};background:${isActive ? 'var(--ink)' : 'transparent'};color:${isActive ? 'var(--bg)' : 'var(--sub)'};`;
+                btn.onclick = () => {
+                  Storage.prototype.setItem.call(localStorage, 'doni_theme', key);
+                  window._applyTheme(key);
+                  selectorWrap.querySelectorAll('button').forEach(b => {
+                    const active = b.dataset.themeKey === key;
+                    b.style.border = `1px solid ${active ? 'var(--ink)' : 'var(--line)'}`;
+                    b.style.background = active ? 'var(--ink)' : 'transparent';
+                    b.style.color = active ? 'var(--bg)' : 'var(--sub)';
+                  });
+                };
+                selectorWrap.appendChild(btn);
+              });
+              // 설정 탭 상단 타이틀 아래에 삽입
+              const titleEl = parent.querySelector('.page-title') || parent.firstElementChild;
+              titleEl.insertAdjacentElement('afterend', selectorWrap);
             }
 
             // 입력 바 오른쪽에 저장 버튼 추가 + 버튼 행 초기화/동기화로 변경
