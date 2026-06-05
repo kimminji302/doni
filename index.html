@@ -140,6 +140,9 @@
   <style>
     /* 한국어 줄바꿈 전체 적용 */
     * { word-break: keep-all; }
+    /* 브라우저 강제 다크모드(삼성 어둡게 보기 등) 차단 — 앱이 직접 처리 */
+    :root { color-scheme: light; }
+    :root[data-theme="dark"] { color-scheme: dark; }
 
     /* FAB 버튼을 앱 컨테이너 기준으로 고정 (데스크톱 nav 겹침 방지) */
     @media (min-width: 500px) {
