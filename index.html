@@ -482,8 +482,15 @@
                   if (!uid) { await window.doniAlert('로그인이 필요해요.'); return; }
                   syncBtn.textContent = '동기화 중...';
                   syncBtn.disabled = true;
-                  await loadFromSupabase(uid);
-                  location.reload();
+                  try {
+                    await loadFromSupabase(uid);
+                    syncBtn.textContent = '완료!';
+                    setTimeout(() => location.reload(), 800);
+                  } catch(e) {
+                    syncBtn.textContent = '동기화';
+                    syncBtn.disabled = false;
+                    await window.doniAlert('동기화에 실패했어요. 다시 시도해줘요.');
+                  }
                 };
                 btnRow.appendChild(syncBtn);
               }
