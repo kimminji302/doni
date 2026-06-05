@@ -483,13 +483,19 @@
                   syncBtn.textContent = '동기화 중...';
                   syncBtn.disabled = true;
                   try {
-                    await loadFromSupabase(uid);
+                    const [expRes, setRes, planRes] = await Promise.all([
+                      sb.from('expenses').select('*').eq('user_id', uid),
+                      sb.from('monthly_settings').select('*').eq('user_id', uid),
+                      sb.from('plans').select('*').eq('user_id', uid)
+                    ]);
+                    const errs = [expRes.error, setRes.error, planRes.error].filter(Boolean);
+                    if (errs.length > 0) throw new Error(errs[0].message);
                     syncBtn.textContent = '완료!';
                     setTimeout(() => location.reload(), 800);
                   } catch(e) {
                     syncBtn.textContent = '동기화';
                     syncBtn.disabled = false;
-                    await window.doniAlert('동기화에 실패했어요. 다시 시도해줘요.');
+                    await window.doniAlert('동기화 실패: ' + e.message);
                   }
                 };
                 btnRow.appendChild(syncBtn);
