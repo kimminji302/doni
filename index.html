@@ -228,7 +228,13 @@
   <script>
     (function() {
       var t = localStorage.getItem('doni_theme') || 'light';
-      if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      if (t === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        var cs = document.querySelector('meta[name="color-scheme"]');
+        if (cs) cs.content = 'dark';
+        var tc = document.querySelector('meta[name="theme-color"]');
+        if (tc) tc.content = '#000000';
+      }
     })();
   </script>
 </head>
@@ -455,6 +461,7 @@
         };
 
         window.signOut = async function() {
+          window._currentUser = null;
           await sb.auth.signOut();
         };
       }
@@ -606,8 +613,10 @@
         const cur = document.documentElement.getAttribute('data-theme') || 'light';
         const next = cur === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
-        document.querySelector('meta[name="color-scheme"]').content = next;
-        document.querySelector('meta[name="theme-color"]').content = next === 'dark' ? '#000000' : '#F9F7F2';
+        const csMeta = document.querySelector('meta[name="color-scheme"]');
+        if (csMeta) csMeta.content = next;
+        const tcMeta = document.querySelector('meta[name="theme-color"]');
+        if (tcMeta) tcMeta.content = next === 'dark' ? '#000000' : '#F9F7F2';
         const origSet = Storage.prototype.setItem;
         origSet.call(localStorage, 'doni_theme', next);
         const sunSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
