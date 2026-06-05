@@ -522,38 +522,37 @@
             const parent = el.closest('.page-title')?.parentElement || el.parentElement;
             parent.style.position = 'relative';
 
-            // 화면 테마 선택 (화이트 / 다크 / 시스템)
+            // 화면 테마 선택 — 타이틀 옆 작은 버튼 3개
             if (!document.getElementById('doni-theme-selector')) {
               const curTheme = localStorage.getItem('doni_theme') || 'system';
               const selectorWrap = document.createElement('div');
               selectorWrap.id = 'doni-theme-selector';
-              selectorWrap.style.cssText = 'display:flex;gap:8px;margin:0 16px 16px;';
+              selectorWrap.style.cssText = 'display:flex;gap:4px;align-items:center;position:absolute;top:50%;right:16px;transform:translateY(-50%);';
               const options = [
-                { key: 'white', label: '☀️ 라이트' },
-                { key: 'dark',  label: '🌙 다크' },
-                { key: 'system',label: '📱 시스템' },
+                { key: 'white', label: '☀️' },
+                { key: 'dark',  label: '🌙' },
+                { key: 'system',label: '🖥️' },
               ];
               options.forEach(({ key, label }) => {
                 const btn = document.createElement('button');
                 btn.dataset.themeKey = key;
                 btn.textContent = label;
                 const isActive = curTheme === key;
-                btn.style.cssText = `flex:1;padding:10px 4px;border-radius:50px;font-size:13px;font-family:inherit;cursor:pointer;transition:all 0.2s;border:1px solid ${isActive ? 'var(--ink)' : 'var(--line)'};background:${isActive ? 'var(--ink)' : 'transparent'};color:${isActive ? 'var(--bg)' : 'var(--sub)'};`;
+                btn.style.cssText = `width:30px;height:30px;border-radius:50%;font-size:14px;cursor:pointer;outline:none;transition:all 0.2s;border:1.5px solid ${isActive ? 'var(--ink)' : 'var(--line)'};background:${isActive ? 'var(--ink)' : 'transparent'};display:flex;align-items:center;justify-content:center;padding:0;`;
                 btn.onclick = () => {
                   Storage.prototype.setItem.call(localStorage, 'doni_theme', key);
                   window._applyTheme(key);
                   selectorWrap.querySelectorAll('button').forEach(b => {
                     const active = b.dataset.themeKey === key;
-                    b.style.border = `1px solid ${active ? 'var(--ink)' : 'var(--line)'}`;
+                    b.style.border = `1.5px solid ${active ? 'var(--ink)' : 'var(--line)'}`;
                     b.style.background = active ? 'var(--ink)' : 'transparent';
-                    b.style.color = active ? 'var(--bg)' : 'var(--sub)';
                   });
                 };
                 selectorWrap.appendChild(btn);
               });
-              // 설정 탭 상단 타이틀 아래에 삽입
               const titleEl = parent.querySelector('.page-title') || parent.firstElementChild;
-              titleEl.insertAdjacentElement('afterend', selectorWrap);
+              titleEl.style.position = 'relative';
+              titleEl.appendChild(selectorWrap);
             }
 
             // 입력 바 오른쪽에 저장 버튼 추가 + 버튼 행 초기화/동기화로 변경
