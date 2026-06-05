@@ -141,6 +141,11 @@
     /* 한국어 줄바꿈 전체 적용 */
     * { word-break: keep-all; }
 
+    /* 데스크톱에서 FAB 버튼이 앱 컨테이너 안에 위치하도록 */
+    @media (min-width: 500px) {
+      .add-fab[data-v-cc093e01] { right: calc(50% - 375px/2 + 20px) !important; }
+    }
+
     /* 처음으로 버튼 항상 숨김 */
     .btn-text { display: none !important; }
 
