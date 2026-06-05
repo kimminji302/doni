@@ -376,13 +376,17 @@
         }
 
         sb.auth.getSession().then(({ data: { session } }) => {
-          if (session) showApp(session.user);
-          else showLogin();
+          try {
+            if (session) showApp(session.user);
+            else showLogin();
+          } catch(e) { console.error('session init error:', e); showLogin(); }
         });
 
         sb.auth.onAuthStateChange((event, session) => {
-          if (session) showApp(session.user);
-          else showLogin();
+          try {
+            if (session) showApp(session.user);
+            else showLogin();
+          } catch(e) { console.error('auth state error:', e); showLogin(); }
         });
 
         window.signInWithGoogle = async function() {
@@ -415,7 +419,7 @@
           if (document.getElementById('doni-logout-btn')) { observer.disconnect(); return; }
           const titles = document.querySelectorAll('.page-title');
           titles.forEach(el => {
-            if (el.textContent.trim() === '이달의 약속') {
+            if (el.textContent.includes('이달의 약속')) {
               const btn = document.createElement('button');
               btn.id = 'doni-logout-btn';
               btn.textContent = '로그아웃';
@@ -439,7 +443,7 @@
           }
           const titles = document.querySelectorAll('.page-title');
           titles.forEach(el => {
-            if (el.textContent.trim() !== '이달의 약속') return;
+            if (!el.textContent.includes('이달의 약속')) return;
             const parent = el.closest('.page-title')?.parentElement || el.parentElement;
             parent.style.position = 'relative';
 
