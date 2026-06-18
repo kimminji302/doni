@@ -560,6 +560,8 @@
 
             // 입력 바 오른쪽에 저장 버튼 추가 + 버튼 행 초기화/동기화로 변경
             if (!document.getElementById('doni-sync-btn')) {
+              // 버튼 행: 목표 저장하기 → 초기화로 교체 (먼저 saveBtn 참조 확보)
+              const saveBtn = parent.querySelector('.btn-fill');
               // 입력 바에 저장 버튼 추가
               const inputEl = parent.querySelector('.clean-input');
               if (inputEl && !document.getElementById('doni-inline-save-btn')) {
@@ -571,11 +573,11 @@
                 inlineSaveBtn.id = 'doni-inline-save-btn';
                 inlineSaveBtn.textContent = '저장';
                 inlineSaveBtn.style.cssText = 'flex-shrink:0;padding:8px 14px;border:none;background:var(--ink);color:var(--bg);border-radius:50px;font-size:13px;font-family:inherit;font-weight:700;cursor:pointer;';
-                inlineSaveBtn.onclick = () => { parent.querySelector('.btn-fill')?.click(); };
+                // saveBtn 교체 전에 원래 Vue 저장 로직 캡처
+                inlineSaveBtn.onclick = () => { saveBtn?.click(); };
                 inputWrap.appendChild(inlineSaveBtn);
               }
-              // 버튼 행: 목표 저장하기 → 초기화로 교체
-              const saveBtn = parent.querySelector('.btn-fill');
+              // saveBtn을 초기화로 교체 (inlineSaveBtn 등록 이후)
               if (saveBtn) {
                 saveBtn.textContent = '초기화';
                 saveBtn.onclick = async () => {
