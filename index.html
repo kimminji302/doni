@@ -458,6 +458,7 @@
 
             // 입력 바 오른쪽에 저장 버튼 추가 + 버튼 행 초기화/동기화로 변경
             if (!document.getElementById('doni-sync-btn')) {
+              const saveBtn = parent.querySelector('.btn-fill');
               // 입력 바에 저장 버튼 추가
               const inputEl = parent.querySelector('.clean-input');
               if (inputEl && !document.getElementById('doni-inline-save-btn')) {
@@ -469,22 +470,26 @@
                 inlineSaveBtn.id = 'doni-inline-save-btn';
                 inlineSaveBtn.textContent = '저장';
                 inlineSaveBtn.style.cssText = 'flex-shrink:0;padding:8px 14px;border:none;background:var(--ink);color:var(--bg);border-radius:50px;font-size:13px;font-family:inherit;font-weight:700;cursor:pointer;';
-                inlineSaveBtn.onclick = () => { parent.querySelector('.btn-fill')?.click(); };
+                // saveBtn이 숨겨져도 click()은 Vue 이벤트 리스너를 실행함
+                inlineSaveBtn.onclick = () => { saveBtn?.click(); };
                 inputWrap.appendChild(inlineSaveBtn);
               }
-              // 버튼 행: 목표 저장하기 → 초기화로 교체
-              const saveBtn = parent.querySelector('.btn-fill');
               if (saveBtn) {
-                saveBtn.textContent = '초기화';
-                saveBtn.onclick = async () => {
+                // saveBtn 숨김 — Vue addEventListener 저장 로직은 그대로 유지, onclick은 건드리지 않음
+                saveBtn.style.display = 'none';
+                const btnRow = saveBtn.parentElement;
+                btnRow.style.cssText = 'display:flex;flex-direction:row;gap:8px;margin-bottom:40px;';
+                // 초기화 버튼은 완전히 새로 생성 (Vue 이벤트 없음 → 초기화만 실행)
+                const resetBtn = document.createElement('button');
+                resetBtn.textContent = '초기화';
+                resetBtn.onclick = async () => {
                   const ok = await window.doniConfirm('모든 데이터를 초기화할까요?');
                   if (!ok) return;
                   ['doni_exp_v3','doni_set_v3','doni_plan_v3'].forEach(k => localStorage.removeItem(k));
                   location.reload();
                 };
-                const btnRow = saveBtn.parentElement;
-                btnRow.style.cssText = 'display:flex;flex-direction:row;gap:8px;margin-bottom:40px;';
-                saveBtn.style.cssText = 'flex:1 !important;padding:13px !important;border:1px solid var(--line) !important;background:transparent !important;color:var(--sub) !important;border-radius:50px !important;font-size:13px !important;font-family:inherit !important;font-weight:normal !important;cursor:pointer !important;box-shadow:none !important;transform:none !important;';
+                resetBtn.style.cssText = 'flex:1 !important;padding:13px !important;border:1px solid var(--line) !important;background:transparent !important;color:var(--sub) !important;border-radius:50px !important;font-size:13px !important;font-family:inherit !important;font-weight:normal !important;cursor:pointer !important;box-shadow:none !important;transform:none !important;';
+                btnRow.appendChild(resetBtn);
                 const syncBtn = document.createElement('button');
                 syncBtn.id = 'doni-sync-btn';
                 syncBtn.textContent = '동기화';
