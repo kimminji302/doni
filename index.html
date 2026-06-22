@@ -633,16 +633,16 @@
 
       // 홈탭 진행바 주입 (탭 재진입/월 이동 시에도 갱신)
       function injectHomeProgress() {
-        let lastKey = null; // "YYYY-M" 기준으로 변화 감지
+        let lastKey = null;
         const observer = new MutationObserver(() => {
-          const balanceCard = document.querySelector('.balance-card');
-          if (!balanceCard) {
-            // 홈탭 벗어남 → 초기화
+          // .home-bottom 기준으로 감지 — balance-card보다 빠르게 잡힘
+          const homeBottom = document.querySelector('.home-bottom');
+          if (!homeBottom) {
             lastKey = null;
             document.getElementById('doni-progress-bar-wrap')?.remove();
             return;
           }
-          // 현재 표시 월 읽기 (.home-header 내 DateNav 텍스트 "YYYY. MM")
+          // 현재 표시 월 읽기
           const dateSpan = document.querySelector('.home-header .date-nav, .home-header [class*="date"]');
           let y, m;
           if (dateSpan) {
@@ -666,31 +666,28 @@
           const spent = getMonthSpent(y, m);
           const pct = Math.min(100, Math.round(spent / goalAmt * 100));
           const remaining = goalAmt - spent;
-          const score = getScore();
-          const streak = score.streak || 0;
 
           const wrap = document.createElement('div');
           wrap.id = 'doni-progress-bar-wrap';
-          wrap.style.cssText = 'margin:12px 16px 0;padding:20px;background:var(--white);border-radius:20px;box-shadow:var(--shadow-sm);';
+          wrap.style.cssText = 'padding:0 0 16px;';
 
           const barColor = pct >= 100 ? '#E8342A' : pct >= 80 ? '#f59e0b' : 'var(--accent)';
           const remainColor = remaining < 0 ? '#E8342A' : 'var(--ink)';
           const remainLabel = remaining >= 0 ? '남은 금액' : '초과 금액';
           const remainAmt = Math.abs(remaining).toLocaleString();
-          const streakText = streak > 0 ? `${streak}/6` : '0/6';
 
           wrap.innerHTML = `
-            <div style="margin-bottom:12px;">
+            <div style="margin-bottom:10px;">
               <div style="font-size:11px;color:var(--sub);margin-bottom:2px;">${remainLabel}</div>
               <div style="font-size:28px;font-weight:800;color:${remainColor};letter-spacing:-0.5px;">${remaining < 0 ? '-' : ''}₩${remainAmt}</div>
               <div style="font-size:11px;color:var(--sub);margin-top:2px;">목표 ${goalAmt.toLocaleString()}원 중 ${spent.toLocaleString()}원 사용</div>
             </div>
-            <div style="height:6px;background:var(--line);border-radius:3px;overflow:hidden;">
-              <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width 0.5s;"></div>
-            </div>
-            <div style="font-size:11px;color:var(--sub);margin-top:4px;text-align:right;">${pct}% 사용</div>`;
+            <div style="height:4px;background:var(--line);border-radius:2px;overflow:hidden;">
+              <div style="height:100%;width:${pct}%;background:${barColor};border-radius:2px;"></div>
+            </div>`;
 
-          balanceCard.parentElement.insertBefore(wrap, balanceCard);
+          // home-bottom 첫 번째 자식으로 삽입 (즉시 표시)
+          homeBottom.insertBefore(wrap, homeBottom.firstChild);
         });
         observer.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
