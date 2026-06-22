@@ -959,13 +959,7 @@
                   syncBtn.textContent = '불러오는 중...';
                   syncBtn.disabled = true;
                   try {
-                    const [expRes, setRes, planRes] = await Promise.all([
-                      window._sb.from('expenses').select('*').eq('user_id', uid),
-                      window._sb.from('monthly_settings').select('*').eq('user_id', uid),
-                      window._sb.from('plans').select('*').eq('user_id', uid)
-                    ]);
-                    const errs = [expRes.error, setRes.error, planRes.error].filter(Boolean);
-                    if (errs.length > 0) throw new Error(errs[0].message);
+                    await loadFromSupabase(uid);
                     syncBtn.textContent = '완료!';
                     setTimeout(() => location.reload(), 800);
                   } catch(e) {
