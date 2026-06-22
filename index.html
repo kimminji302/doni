@@ -414,11 +414,10 @@
         };
       }
 
-      // 설정탭 "이달의 약속" 페이지에 로그아웃 버튼 주입
+      // 설정탭 "이달의 약속" 페이지에 로그아웃 버튼 주입 (탭 재진입 시에도 재주입)
       function injectLogoutButton() {
-        if (document.getElementById('doni-logout-btn')) return;
         const observer = new MutationObserver(() => {
-          if (document.getElementById('doni-logout-btn')) { observer.disconnect(); return; }
+          if (document.getElementById('doni-logout-btn')) return;
           const titles = document.querySelectorAll('.page-title');
           titles.forEach(el => {
             if (el.textContent.includes('이달의 약속')) {
@@ -430,7 +429,6 @@
               const parent = el.closest('.page-title')?.parentElement || el.parentElement;
               parent.style.position = 'relative';
               parent.appendChild(btn);
-              observer.disconnect();
             }
           });
         });
@@ -622,14 +620,13 @@
         document.body.appendChild(backdrop);
       }
 
-      // 홈탭 진행바 주입
+      // 홈탭 진행바 주입 (탭 재진입 시에도 재주입)
       function injectHomeProgress() {
         const observer = new MutationObserver(() => {
+          // 이미 있으면 스킵 (disconnect 하지 않음 — 탭 재진입 감지 위해)
           if (document.getElementById('doni-progress-bar-wrap')) return;
-          const homeTab = document.querySelector('.tab-content.active') || document.querySelector('[class*="home"]');
           const summaryCard = document.querySelector('.summary-card') || document.querySelector('.balance-card') || document.querySelector('.home-card');
           if (!summaryCard) return;
-          if (document.getElementById('doni-progress-bar-wrap')) return;
 
           const now = new Date();
           const y = now.getFullYear(), m = now.getMonth()+1;
@@ -659,17 +656,14 @@
           <div style="font-size:12px;color:${remaining<0?'#E8342A':'var(--sub)'};">${remainText}</div>`;
 
           summaryCard.parentElement.insertBefore(wrap, summaryCard);
-          observer.disconnect();
         });
         observer.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
 
-      // 설정탭에 동기화/초기화 버튼 주입
+      // 설정탭에 동기화/초기화 버튼 주입 (탭 재진입 시에도 재주입)
       function injectSettingButtons() {
         const observer = new MutationObserver(() => {
-          if (document.getElementById('doni-theme-btn-left') && document.getElementById('doni-sync-btn')) {
-            observer.disconnect(); return;
-          }
+          // disconnect 하지 않음 — Vue가 탭 재렌더링해도 계속 감지
           const titles = document.querySelectorAll('.page-title');
           titles.forEach(el => {
             if (!el.textContent.includes('이달의 약속')) return;
