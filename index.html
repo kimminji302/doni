@@ -673,10 +673,6 @@
           const streakText = streak > 0 ? `${streak >= 6 ? '🎓' : streak >= 3 ? '🌿' : '🌱'} ${streak}/6` : '0/6';
 
           wrap.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <span style="font-size:12px;color:var(--sub);">🎯 ${y}년 ${m}월 목표</span>
-              <span style="font-size:12px;color:var(--accent);font-weight:700;">${streakText}</span>
-            </div>
             <div style="margin-bottom:12px;">
               <div style="font-size:11px;color:var(--sub);margin-bottom:2px;">${remainLabel}</div>
               <div style="font-size:28px;font-weight:800;color:${remainColor};letter-spacing:-0.5px;">${remaining < 0 ? '-' : ''}₩${remainAmt}</div>
@@ -800,44 +796,72 @@
                 .setting-card,.avail-row,.avail-label,.date-nav-wrap,
                 .goal-label,.section-label,.clean-input{display:none!important}
                 .setting-page .date-nav{display:none!important}
+                .balance-card{display:none!important}
               `;
               document.head.appendChild(s);
             }
 
             // 월별 달성 히스토리 섹션 주입
             if (!parent.querySelector('#doni-history-wrap')) {
-              const score = getScore();
               const histWrap = document.createElement('div');
               histWrap.id = 'doni-history-wrap';
               histWrap.style.cssText = 'margin:0 0 20px;';
-              const months = [];
-              const now2 = new Date();
-              for (let i = 5; i >= 0; i--) {
-                const d = new Date(now2.getFullYear(), now2.getMonth() - i, 1);
-                const y2 = d.getFullYear(), m2 = d.getMonth()+1;
-                const key2 = y2+'-'+m2;
-                const ga = getGoalAmount(y2, m2);
-                const sp = getMonthSpent(y2, m2);
-                const isDone = score.history ? score.history[key2] : false;
-                const isCurrent = (y2 === now2.getFullYear() && m2 === now2.getMonth()+1);
-                months.push({ label: m2+'월', ga, sp, isDone, isCurrent, key2 });
-              }
-              const rows = months.map(mo => {
-                if (!mo.ga) return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);opacity:0.4;"><span style="font-size:13px;color:var(--ink);">${mo.label}</span><span style="font-size:12px;color:var(--sub);">목표 미설정</span></div>`;
-                const pct = Math.min(100, Math.round(mo.sp/mo.ga*100));
-                const icon = mo.isCurrent ? '🎯' : mo.isDone ? '✅' : mo.sp > 0 ? '❌' : '–';
-                return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);">
-                  <span style="font-size:13px;color:var(--ink);font-weight:${mo.isCurrent?'700':'400'};">${icon} ${mo.label}</span>
-                  <div style="text-align:right;">
-                    <span style="font-size:12px;color:var(--sub);">${mo.sp.toLocaleString()}원 / ${mo.ga.toLocaleString()}원</span>
-                    <span style="margin-left:6px;font-size:12px;color:${pct>=100?'#E8342A':'var(--sub)'};">(${pct}%)</span>
+
+              function renderHistory() {
+                const score = getScore();
+                const now2 = new Date();
+                const savedStart = localStorage.getItem('doni_start_month'); // "YYYY-M"
+                let startY, startM;
+                if (savedStart) {
+                  [startY, startM] = savedStart.split('-').map(Number);
+                } else {
+                  startY = now2.getFullYear(); startM = now2.getMonth()+1;
+                }
+                const months = [];
+                for (let i = 0; i < 6; i++) {
+                  const d = new Date(startY, startM - 1 + i, 1);
+                  const y2 = d.getFullYear(), m2 = d.getMonth()+1;
+                  const key2 = y2+'-'+m2;
+                  const ga = getGoalAmount(y2, m2);
+                  const sp = getMonthSpent(y2, m2);
+                  const isDone = score.history ? score.history[key2] : false;
+                  const isCurrent = (y2 === now2.getFullYear() && m2 === now2.getMonth()+1);
+                  const isFuture = new Date(y2, m2-1) > now2;
+                  months.push({ label: y2+'년 '+m2+'월', ga, sp, isDone, isCurrent, isFuture, key2 });
+                }
+                const rows = months.map(mo => {
+                  if (mo.isFuture) return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);opacity:0.35;"><span style="font-size:13px;color:var(--ink);">– ${mo.label}</span><span style="font-size:12px;color:var(--sub);">예정</span></div>`;
+                  if (!mo.ga) return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);opacity:0.4;"><span style="font-size:13px;color:var(--ink);">– ${mo.label}</span><span style="font-size:12px;color:var(--sub);">목표 미설정</span></div>`;
+                  const pct = Math.min(100, Math.round(mo.sp/mo.ga*100));
+                  const icon = mo.isCurrent ? '🎯' : mo.isDone ? '✅' : mo.sp > 0 ? '❌' : '–';
+                  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);">
+                    <span style="font-size:13px;color:var(--ink);font-weight:${mo.isCurrent?'700':'400'};">${icon} ${mo.label}</span>
+                    <div style="text-align:right;">
+                      <span style="font-size:12px;color:var(--sub);">${mo.sp.toLocaleString()}원 / ${mo.ga.toLocaleString()}원</span>
+                      <span style="margin-left:6px;font-size:12px;color:${pct>=100?'#E8342A':'var(--sub)'};">(${pct}%)</span>
+                    </div>
+                  </div>`;
+                }).join('');
+                const startLabel = startY+'년 '+startM+'월';
+                histWrap.innerHTML = `<div style="padding:20px;background:var(--white);border-radius:20px;box-shadow:var(--shadow-sm);">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <span style="font-size:14px;font-weight:700;color:var(--ink);">📅 6개월 현황</span>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <span style="font-size:11px;color:var(--sub);">시작월</span>
+                      <input id="doni-start-month-input" type="month" value="${startY}-${String(startM).padStart(2,'0')}"
+                        style="font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:20px;background:var(--bg);color:var(--ink);font-family:inherit;outline:none;" />
+                    </div>
                   </div>
+                  ${rows}
                 </div>`;
-              }).join('');
-              histWrap.innerHTML = `<div style="padding:20px;background:var(--white);border-radius:20px;box-shadow:var(--shadow-sm);">
-                <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:12px;">📅 최근 6개월 현황</div>
-                ${rows}
-              </div>`;
+                histWrap.querySelector('#doni-start-month-input').onchange = e => {
+                  const [y3, m3] = e.target.value.split('-').map(Number);
+                  localStorage.setItem('doni_start_month', y3+'-'+m3);
+                  renderHistory();
+                };
+              }
+              renderHistory();
+
               const goalWrapEl = parent.querySelector('#doni-goal-amount-wrap');
               if (goalWrapEl && goalWrapEl.nextSibling) {
                 parent.insertBefore(histWrap, goalWrapEl.nextSibling);
@@ -858,9 +882,21 @@
                 resetBtn.id = 'doni-reset-btn';
                 resetBtn.textContent = '초기화';
                 resetBtn.onclick = async () => {
-                  const ok = await window.doniConfirm('모든 데이터를 초기화할까요?');
+                  const ok = await window.doniConfirm('모든 데이터를 초기화할까요?\n(로컬 및 서버 데이터 모두 삭제됩니다)');
                   if (!ok) return;
-                  ['doni_exp_v3','doni_set_v3','doni_plan_v3'].forEach(k => localStorage.removeItem(k));
+                  // localStorage 삭제
+                  ['doni_exp_v3','doni_set_v3','doni_plan_v3','doni_score_v1','doni_start_month'].forEach(k => localStorage.removeItem(k));
+                  // Supabase 삭제
+                  const uid = window._currentUser?.id;
+                  if (uid && window._sb) {
+                    try {
+                      await Promise.all([
+                        window._sb.from('expenses').delete().eq('user_id', uid),
+                        window._sb.from('monthly_settings').delete().eq('user_id', uid),
+                        window._sb.from('plans').delete().eq('user_id', uid),
+                      ]);
+                    } catch(e) { console.warn('Supabase reset error', e); }
+                  }
                   location.reload();
                 };
                 resetBtn.style.cssText = 'flex:1 !important;padding:13px !important;border:1px solid var(--line) !important;background:transparent !important;color:var(--sub) !important;border-radius:50px !important;font-size:13px !important;font-family:inherit !important;font-weight:normal !important;cursor:pointer !important;box-shadow:none !important;transform:none !important;';
