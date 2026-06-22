@@ -360,6 +360,8 @@
               appEl.style.display = '';
               injectLogoutButton();
               injectSettingButtons();
+              injectHomeProgress();
+              checkMonthlyResult();
             }
           });
         }
@@ -431,6 +433,233 @@
         observer.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
 
+      // ── 점수 데이터 헬퍼 ──────────────────────────────────────────
+      const SCORE_KEY = 'doni_score_v1';
+      function getScore() {
+        try { return JSON.parse(localStorage.getItem(SCORE_KEY) || 'null') || { streak:0, totalSuccess:0, history:{}, graduated:false, graduatedAt:null, graduateCount:0 }; }
+        catch(e) { return { streak:0, totalSuccess:0, history:{}, graduated:false, graduatedAt:null, graduateCount:0 }; }
+      }
+      function saveScore(s) { localStorage.setItem(SCORE_KEY, JSON.stringify(s)); }
+
+      function getGoalAmount(year, month) {
+        try {
+          const sets = JSON.parse(localStorage.getItem('doni_set_v3') || '{}');
+          return (sets[year+'-'+month] || {}).goalAmount || 0;
+        } catch(e) { return 0; }
+      }
+      function setGoalAmount(year, month, amount) {
+        const sets = JSON.parse(localStorage.getItem('doni_set_v3') || '{}');
+        if (!sets[year+'-'+month]) sets[year+'-'+month] = {};
+        sets[year+'-'+month].goalAmount = amount;
+        localStorage.setItem('doni_set_v3', JSON.stringify(sets));
+      }
+      function getMonthSpent(year, month) {
+        try {
+          const exps = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
+          return exps.filter(e => e.year === year && e.month === month && (e.cost||0) > 0)
+                     .reduce((s,e) => s + (e.cost||0), 0);
+        } catch(e) { return 0; }
+      }
+
+      // 월말 달성 판정
+      function checkMonthlyResult() {
+        const now = new Date();
+        const y = now.getFullYear(), m = now.getMonth() + 1;
+        // 지난달
+        const prevY = m === 1 ? y-1 : y, prevM = m === 1 ? 12 : m-1;
+        const key = prevY+'-'+prevM;
+        const score = getScore();
+        if (score.history[key] !== undefined) return; // 이미 판정됨
+        const goalAmt = getGoalAmount(prevY, prevM);
+        if (!goalAmt) return; // 목표 미설정
+        const spent = getMonthSpent(prevY, prevM);
+        const success = spent <= goalAmt;
+        score.history[key] = success;
+        if (success) {
+          score.streak = (score.streak || 0) + 1;
+          score.totalSuccess = (score.totalSuccess || 0) + 1;
+        } else {
+          score.streak = 0;
+        }
+        saveScore(score);
+        // 배지/졸업 팝업
+        setTimeout(() => showStreakPopup(score.streak, success), 800);
+      }
+
+      // 배지/졸업 팝업
+      async function showStreakPopup(streak, success) {
+        if (!success) return;
+        let msg = '';
+        if (streak === 1) msg = '🌱 1개월 성공!\n소비 습관 교정을 시작했어요.';
+        else if (streak === 3) msg = '🌿 3개월 연속 성공!\n좋은 습관이 만들어지고 있어요!';
+        else if (streak === 6) { showGraduationPopup(); return; }
+        else if (streak === 12) { showGraduationPopup(true); return; }
+        else if (streak > 1) msg = `✅ ${streak}개월 연속 성공!\n계속 이 페이스로 가요!`;
+        if (msg) await window.doniAlert(msg);
+      }
+
+      // 졸업장 팝업
+      function showGraduationPopup(honorary) {
+        const score = getScore();
+        if (!score.graduated || honorary) {
+          score.graduated = true;
+          score.graduatedAt = new Date().toISOString();
+          score.graduateCount = (score.graduateCount||0) + 1;
+          saveScore(score);
+        }
+        const backdrop = document.createElement('div');
+        backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+        const box = document.createElement('div');
+        box.style.cssText = 'background:var(--bg);border-radius:24px;padding:32px 24px;max-width:320px;width:90%;text-align:center;color:var(--ink);font-family:inherit;';
+        const title = honorary ? '🏆 명예 졸업' : '🎓 졸업을 축하해요!';
+        const sub = honorary ? '12개월 연속 목표 달성! 진정한 소비 습관의 주인이 되셨어요.' : '6개월 연속 목표 달성!\n이제 돈이를 졸업할 자격이 생겼어요.';
+        box.innerHTML = `<div style="font-size:48px;margin-bottom:12px;">${honorary?'🏆':'🎓'}</div>
+          <div style="font-size:20px;font-weight:700;margin-bottom:8px;">${title}</div>
+          <div style="font-size:14px;color:var(--sub);margin-bottom:24px;line-height:1.6;">${sub}</div>
+          <button id="doni-grad-view-btn" style="width:100%;padding:14px;background:var(--ink);color:var(--bg);border:none;border-radius:50px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:10px;">졸업장 보기</button>
+          <button id="doni-grad-close-btn" style="width:100%;padding:14px;background:transparent;color:var(--sub);border:1px solid var(--line);border-radius:50px;font-size:14px;font-family:inherit;cursor:pointer;">닫기</button>`;
+        backdrop.appendChild(box);
+        document.body.appendChild(backdrop);
+        box.querySelector('#doni-grad-close-btn').onclick = () => backdrop.remove();
+        box.querySelector('#doni-grad-view-btn').onclick = () => { backdrop.remove(); showGraduationCert(); };
+      }
+
+      // 졸업장 Canvas 생성 + 공유
+      function showGraduationCert() {
+        const score = getScore();
+        const userName = window._currentUser?.user_metadata?.full_name || window._currentUser?.email || '도니 사용자';
+        const dateStr = score.graduatedAt ? new Date(score.graduatedAt).toLocaleDateString('ko-KR') : new Date().toLocaleDateString('ko-KR');
+        const streakStr = score.streak;
+        const totalStr = score.totalSuccess;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 600; canvas.height = 800;
+        const ctx = canvas.getContext('2d');
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const bg = isDark ? '#111111' : '#F9F7F2';
+        const ink = isDark ? '#FFFFFF' : '#3D2B1F';
+        const sub = isDark ? '#888888' : '#7D5A3C';
+        const accent = '#E8342A';
+
+        ctx.fillStyle = bg; ctx.fillRect(0,0,600,800);
+        ctx.strokeStyle = accent; ctx.lineWidth = 6;
+        ctx.strokeRect(20,20,560,760);
+        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(61,43,31,0.15)';
+        ctx.lineWidth = 1; ctx.strokeRect(30,30,540,740);
+
+        ctx.fillStyle = ink; ctx.textAlign = 'center';
+        ctx.font = 'bold 28px sans-serif'; ctx.fillText('🎓 졸업장', 300, 120);
+        ctx.font = '16px sans-serif'; ctx.fillStyle = sub;
+        ctx.fillText('Certificate of Graduation', 300, 155);
+
+        ctx.fillStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(61,43,31,0.05)';
+        ctx.fillRect(60,190,480,2);
+
+        ctx.fillStyle = ink; ctx.font = '14px sans-serif';
+        ctx.fillText('이 졸업장은', 300, 240);
+        ctx.font = 'bold 26px sans-serif';
+        ctx.fillText(userName + ' 님', 300, 285);
+        ctx.font = '14px sans-serif'; ctx.fillStyle = sub;
+        ctx.fillText('께서 돈이 소비습관 과정을', 300, 320);
+        ctx.fillText('성공적으로 마쳤음을 증명합니다.', 300, 350);
+
+        ctx.fillStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(61,43,31,0.05)';
+        ctx.fillRect(60,380,480,2);
+
+        ctx.fillStyle = ink; ctx.font = 'bold 48px sans-serif';
+        ctx.fillText('🏆', 300, 460);
+
+        ctx.font = '13px sans-serif'; ctx.fillStyle = sub;
+        ctx.fillText(`연속 달성 ${streakStr}개월 · 누적 성공 ${totalStr}개월`, 300, 510);
+        ctx.fillText(`졸업일: ${dateStr}`, 300, 540);
+
+        ctx.fillStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(61,43,31,0.05)';
+        ctx.fillRect(60,570,480,2);
+
+        ctx.fillStyle = accent; ctx.font = 'bold 18px sans-serif';
+        ctx.fillText('돈이', 300, 630);
+        ctx.fillStyle = sub; ctx.font = '12px sans-serif';
+        ctx.fillText('doniapp.kr', 300, 655);
+
+        const dataUrl = canvas.toDataURL('image/png');
+        const backdrop = document.createElement('div');
+        backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;';
+        const img = document.createElement('img');
+        img.src = dataUrl; img.style.cssText = 'max-width:300px;width:100%;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.5);';
+        const btnWrap = document.createElement('div');
+        btnWrap.style.cssText = 'display:flex;gap:10px;width:100%;max-width:300px;';
+
+        const shareBtn = document.createElement('button');
+        shareBtn.textContent = '공유하기';
+        shareBtn.style.cssText = 'flex:1;padding:14px;background:#fff;color:#000;border:none;border-radius:50px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;';
+        shareBtn.onclick = async () => {
+          try {
+            const res = await fetch(dataUrl);
+            const blob = await res.blob();
+            const file = new File([blob], 'doni-graduation.png', {type:'image/png'});
+            if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
+              await navigator.share({ title:'돈이 졸업장', text:'나 드디어 돈이 졸업했어! 6개월 연속 소비 목표 달성 🎓', files:[file] });
+            } else {
+              const a = document.createElement('a'); a.href = dataUrl; a.download = 'doni-graduation.png'; a.click();
+            }
+          } catch(e) {
+            const a = document.createElement('a'); a.href = dataUrl; a.download = 'doni-graduation.png'; a.click();
+          }
+        };
+
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '닫기';
+        closeBtn.style.cssText = 'flex:1;padding:14px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:50px;font-size:14px;font-family:inherit;cursor:pointer;';
+        closeBtn.onclick = () => backdrop.remove();
+
+        btnWrap.appendChild(shareBtn); btnWrap.appendChild(closeBtn);
+        backdrop.appendChild(img); backdrop.appendChild(btnWrap);
+        backdrop.onclick = e => { if(e.target===backdrop) backdrop.remove(); };
+        document.body.appendChild(backdrop);
+      }
+
+      // 홈탭 진행바 주입
+      function injectHomeProgress() {
+        const observer = new MutationObserver(() => {
+          if (document.getElementById('doni-progress-bar-wrap')) return;
+          const homeTab = document.querySelector('.tab-content.active') || document.querySelector('[class*="home"]');
+          const summaryCard = document.querySelector('.summary-card') || document.querySelector('.balance-card') || document.querySelector('.home-card');
+          if (!summaryCard) return;
+          if (document.getElementById('doni-progress-bar-wrap')) return;
+
+          const now = new Date();
+          const y = now.getFullYear(), m = now.getMonth()+1;
+          const goalAmt = getGoalAmount(y, m);
+          if (!goalAmt) return;
+          const spent = getMonthSpent(y, m);
+          const pct = Math.min(100, Math.round(spent / goalAmt * 100));
+          const remaining = goalAmt - spent;
+          const score = getScore();
+          const streak = score.streak || 0;
+
+          const wrap = document.createElement('div');
+          wrap.id = 'doni-progress-bar-wrap';
+          wrap.style.cssText = 'margin:12px 16px 0;padding:16px;background:var(--white);border-radius:16px;box-shadow:var(--shadow-sm);';
+
+          const barColor = pct >= 100 ? '#E8342A' : pct >= 80 ? '#f59e0b' : 'var(--accent)';
+          const remainText = remaining >= 0 ? `남은 금액: ${remaining.toLocaleString()}원` : `초과: ${Math.abs(remaining).toLocaleString()}원`;
+
+          wrap.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:13px;font-weight:700;color:var(--ink);">🎯 이번 달 목표</span>
+            <span style="font-size:12px;color:var(--sub);">${streak > 0 ? streak+'개월 연속 성공 중 → '+streak+'/6' : '목표를 달성해보세요!'}</span>
+          </div>
+          <div style="font-size:12px;color:var(--sub);margin-bottom:6px;">${goalAmt.toLocaleString()}원 중 ${spent.toLocaleString()}원 사용</div>
+          <div style="height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-bottom:6px;">
+            <div style="height:100%;width:${pct}%;background:${barColor};border-radius:4px;transition:width 0.5s;"></div>
+          </div>
+          <div style="font-size:12px;color:${remaining<0?'#E8342A':'var(--sub)'};">${remainText}</div>`;
+
+          summaryCard.parentElement.insertBefore(wrap, summaryCard);
+          observer.disconnect();
+        });
+        observer.observe(document.getElementById('app'), { childList: true, subtree: true });
+      }
+
       // 설정탭에 동기화/초기화 버튼 주입
       function injectSettingButtons() {
         const observer = new MutationObserver(() => {
@@ -454,6 +683,61 @@
               themeBtn.onclick = window.toggleTheme;
               themeBtn.style.cssText = 'position:absolute;top:14px;left:16px;background:none;border:none;padding:4px;cursor:pointer;color:var(--sub);display:flex;align-items:center;justify-content:center;';
               parent.appendChild(themeBtn);
+            }
+
+            // 목표 지출 금액 입력 섹션 주입 (최상단)
+            if (!document.getElementById('doni-goal-amount-wrap')) {
+              const now = new Date();
+              const y = now.getFullYear(), m = now.getMonth()+1;
+              const curGoal = getGoalAmount(y, m);
+              const score = getScore();
+
+              const goalWrap = document.createElement('div');
+              goalWrap.id = 'doni-goal-amount-wrap';
+              goalWrap.style.cssText = 'margin:8px 0 20px;padding:20px;background:var(--white);border-radius:20px;box-shadow:var(--shadow-sm);';
+
+              const streakBadge = score.streak > 0
+                ? `<span style="font-size:12px;color:var(--accent);font-weight:700;">${score.streak >= 6 ? '🎓' : score.streak >= 3 ? '🌿' : '🌱'} ${score.streak}개월 연속 성공 중</span>`
+                : `<span style="font-size:12px;color:var(--sub);">목표를 설정하고 습관을 만들어요</span>`;
+
+              goalWrap.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                  <span style="font-size:15px;font-weight:700;color:var(--ink);">🎯 이번 달 목표 지출</span>
+                  ${streakBadge}
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input id="doni-goal-amount-input" type="number" inputmode="numeric" placeholder="목표 금액 입력 (원)"
+                    value="${curGoal || ''}"
+                    style="flex:1;padding:12px 16px;border:1.5px solid var(--line);border-radius:50px;background:var(--bg);color:var(--ink);font-size:14px;font-family:inherit;outline:none;-moz-appearance:textfield;" />
+                  <button id="doni-goal-amount-save" style="flex-shrink:0;padding:12px 18px;border:none;background:var(--ink);color:var(--bg);border-radius:50px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;">저장</button>
+                </div>
+                <div id="doni-goal-amount-msg" style="font-size:12px;color:var(--sub);margin-top:8px;padding-left:4px;"></div>
+                <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-size:12px;color:var(--sub);">6개월 연속 달성 시 졸업장 발급 🎓</span>
+                  <span style="font-size:12px;color:var(--sub);">${score.streak}/6</span>
+                </div>`;
+
+              // 저장 로직
+              goalWrap.querySelector('#doni-goal-amount-save').onclick = () => {
+                const val = parseInt(goalWrap.querySelector('#doni-goal-amount-input').value, 10);
+                const msg = goalWrap.querySelector('#doni-goal-amount-msg');
+                if (!val || val <= 0) { msg.textContent = '올바른 금액을 입력해주세요.'; return; }
+                setGoalAmount(y, m, val);
+                msg.textContent = `✅ ${val.toLocaleString()}원으로 저장됐어요!`;
+                setTimeout(() => { msg.textContent = ''; }, 2000);
+                // 홈 진행바 갱신
+                const prog = document.getElementById('doni-progress-bar-wrap');
+                if (prog) prog.remove();
+                injectHomeProgress();
+              };
+
+              // 페이지 title 아래 삽입
+              const titleEl = parent.querySelector('.page-title');
+              if (titleEl && titleEl.nextSibling) {
+                parent.insertBefore(goalWrap, titleEl.nextSibling);
+              } else {
+                parent.appendChild(goalWrap);
+              }
             }
 
             // 입력 바 오른쪽에 저장 버튼 추가 + 버튼 행 초기화/동기화로 변경
