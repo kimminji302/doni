@@ -793,10 +793,15 @@
               const s = document.createElement('style');
               s.id = 'doni-settings-hide-style';
               s.textContent = `
-                .setting-card,.avail-row,.avail-label,.date-nav-wrap,
-                .goal-label,.section-label,.clean-input{display:none!important}
-                .setting-page .date-nav{display:none!important}
-                .balance-card{display:none!important}
+                .setting-page .setting-card,
+                .setting-page .avail-row,
+                .setting-page .avail-label,
+                .setting-page .date-nav-wrap,
+                .setting-page .goal-label,
+                .setting-page .section-label,
+                .setting-page .clean-input,
+                .setting-page .date-nav { display:none!important }
+                .home .balance-card { display:none!important }
               `;
               document.head.appendChild(s);
             }
