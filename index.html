@@ -363,7 +363,7 @@
           if (!document.getElementById('doni-balance-hide-style')) {
             const s = document.createElement('style');
             s.id = 'doni-balance-hide-style';
-            s.textContent = '.home .balance-card{display:none!important}';
+            s.textContent = '.home .balance-card{display:none!important}.header-balance{display:none!important}';
             document.head.appendChild(s);
           }
           loadFromSupabase(user.id).then(ready => {
