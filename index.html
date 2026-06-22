@@ -703,9 +703,11 @@
       }
 
       function injectChatHeader() {
+        let _lastLabel = null;
         function tryRender() {
           const header = document.querySelector('.chat-header');
-          if (!header) { document.getElementById('doni-chat-count')?.remove(); return; }
+          const el = document.getElementById('doni-chat-count');
+          if (!header) { el?.remove(); _lastLabel = null; return; }
           const dateSpan = header.parentElement?.querySelector('.date-floater .eng');
           let y, m;
           if (dateSpan) {
@@ -714,13 +716,16 @@
           }
           if (!y) { const now = new Date(); y = now.getFullYear(); m = now.getMonth()+1; }
           const count = getMonthCount(y, m);
-          const existing = document.getElementById('doni-chat-count');
-          if (existing) { existing.textContent = `이번 달 ${count}건`; return; }
-          const el = document.createElement('span');
-          el.id = 'doni-chat-count';
-          el.textContent = `이번 달 ${count}건`;
-          el.style.cssText = 'font-size:12px;font-weight:600;color:var(--sub);';
-          header.appendChild(el);
+          const label = `이번 달 ${count}건`;
+          // 텍스트 변화 없으면 DOM 건드리지 않음 (MutationObserver 재트리거 방지)
+          if (label === _lastLabel && el) return;
+          _lastLabel = label;
+          if (el) { el.textContent = label; return; }
+          const span = document.createElement('span');
+          span.id = 'doni-chat-count';
+          span.textContent = label;
+          span.style.cssText = 'font-size:12px;font-weight:600;color:var(--sub);pointer-events:none;';
+          header.appendChild(span);
         }
         tryRender();
         new MutationObserver(tryRender).observe(document.getElementById('app'), { childList:true, subtree:true });
