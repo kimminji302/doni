@@ -142,6 +142,16 @@
     /* 한국어 줄바꿈 전체 적용 */
     * { word-break: keep-all; }
 
+    /* 설정탭 Vue 원본 섹션 숨김 (목표지출금액 카드만 사용) */
+    .doni-settings-simplified .setting-card,
+    .doni-settings-simplified .avail-row,
+    .doni-settings-simplified .avail-label,
+    .doni-settings-simplified .date-nav-wrap,
+    .doni-settings-simplified .clean-input,
+    .doni-settings-simplified .goal-label,
+    .doni-settings-simplified .section-label,
+    .doni-settings-simplified .btn-fill { display: none !important; }
+
     /* 처음으로 버튼 항상 숨김 */
     .btn-text { display: none !important; }
 
@@ -750,12 +760,8 @@
               }
             }
 
-            // Vue가 렌더링한 수입/고정비/목표텍스트 섹션 전부 숨김
-            parent.querySelectorAll('.setting-card, .avail-row, .avail-label, .section-label, .field-label, .goal-label, .clean-input, .detail-list, .detail-toggle').forEach(el => {
-              el.style.display = 'none';
-            });
-            // btn-fill (원래 저장 버튼)도 숨김
-            parent.querySelectorAll('.btn-fill').forEach(el => { el.style.display = 'none'; });
+            // CSS 클래스로 Vue 섹션 숨김 (재렌더링해도 CSS는 유지됨)
+            parent.classList.add('doni-settings-simplified');
 
             // 버튼 행 초기화/동기화로 변경
             if (!document.getElementById('doni-sync-btn')) {
