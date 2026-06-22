@@ -624,18 +624,38 @@
         document.body.appendChild(backdrop);
       }
 
-      // 홈탭 진행바 주입 (탭 재진입 시에도 재주입)
+      // 홈탭 진행바 주입 (탭 재진입/월 이동 시에도 갱신)
       function injectHomeProgress() {
+        let lastKey = null; // "YYYY-M" 기준으로 변화 감지
         const observer = new MutationObserver(() => {
-          // 이미 있으면 스킵 (disconnect 하지 않음 — 탭 재진입 감지 위해)
-          if (document.getElementById('doni-progress-bar-wrap')) return;
-          const summaryCard = document.querySelector('.summary-card') || document.querySelector('.balance-card') || document.querySelector('.home-card');
-          if (!summaryCard) return;
+          const balanceCard = document.querySelector('.balance-card');
+          if (!balanceCard) {
+            // 홈탭 벗어남 → 초기화
+            lastKey = null;
+            document.getElementById('doni-progress-bar-wrap')?.remove();
+            return;
+          }
+          // 현재 표시 월 읽기 (.home-header 내 DateNav 텍스트 "YYYY. MM")
+          const dateSpan = document.querySelector('.home-header .date-nav, .home-header [class*="date"]');
+          let y, m;
+          if (dateSpan) {
+            const match = dateSpan.textContent.match(/(\d{4})\.\s*(\d{1,2})/);
+            if (match) { y = parseInt(match[1]); m = parseInt(match[2]); }
+          }
+          if (!y) { const now = new Date(); y = now.getFullYear(); m = now.getMonth()+1; }
 
-          const now = new Date();
-          const y = now.getFullYear(), m = now.getMonth()+1;
+          const key = y+'-'+m;
           const goalAmt = getGoalAmount(y, m);
-          if (!goalAmt) return;
+          if (!goalAmt) {
+            document.getElementById('doni-progress-bar-wrap')?.remove();
+            lastKey = key;
+            return;
+          }
+          if (lastKey === key && document.getElementById('doni-progress-bar-wrap')) return;
+          lastKey = key;
+
+          document.getElementById('doni-progress-bar-wrap')?.remove();
+
           const spent = getMonthSpent(y, m);
           const pct = Math.min(100, Math.round(spent / goalAmt * 100));
           const remaining = goalAmt - spent;
@@ -644,22 +664,30 @@
 
           const wrap = document.createElement('div');
           wrap.id = 'doni-progress-bar-wrap';
-          wrap.style.cssText = 'margin:12px 16px 0;padding:16px;background:var(--white);border-radius:16px;box-shadow:var(--shadow-sm);';
+          wrap.style.cssText = 'margin:12px 16px 0;padding:20px;background:var(--white);border-radius:20px;box-shadow:var(--shadow-sm);';
 
           const barColor = pct >= 100 ? '#E8342A' : pct >= 80 ? '#f59e0b' : 'var(--accent)';
-          const remainText = remaining >= 0 ? `남은 금액: ${remaining.toLocaleString()}원` : `초과: ${Math.abs(remaining).toLocaleString()}원`;
+          const remainColor = remaining < 0 ? '#E8342A' : 'var(--ink)';
+          const remainLabel = remaining >= 0 ? '남은 금액' : '초과 금액';
+          const remainAmt = Math.abs(remaining).toLocaleString();
+          const streakText = streak > 0 ? `${streak >= 6 ? '🎓' : streak >= 3 ? '🌿' : '🌱'} ${streak}/6` : '0/6';
 
-          wrap.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <span style="font-size:13px;font-weight:700;color:var(--ink);">🎯 이번 달 목표</span>
-            <span style="font-size:12px;color:var(--sub);">${streak > 0 ? streak+'개월 연속 성공 중 → '+streak+'/6' : '목표를 달성해보세요!'}</span>
-          </div>
-          <div style="font-size:12px;color:var(--sub);margin-bottom:6px;">${goalAmt.toLocaleString()}원 중 ${spent.toLocaleString()}원 사용</div>
-          <div style="height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-bottom:6px;">
-            <div style="height:100%;width:${pct}%;background:${barColor};border-radius:4px;transition:width 0.5s;"></div>
-          </div>
-          <div style="font-size:12px;color:${remaining<0?'#E8342A':'var(--sub)'};">${remainText}</div>`;
+          wrap.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-size:12px;color:var(--sub);">🎯 ${y}년 ${m}월 목표</span>
+              <span style="font-size:12px;color:var(--accent);font-weight:700;">${streakText}</span>
+            </div>
+            <div style="margin-bottom:12px;">
+              <div style="font-size:11px;color:var(--sub);margin-bottom:2px;">${remainLabel}</div>
+              <div style="font-size:28px;font-weight:800;color:${remainColor};letter-spacing:-0.5px;">${remaining < 0 ? '-' : ''}₩${remainAmt}</div>
+              <div style="font-size:11px;color:var(--sub);margin-top:2px;">목표 ${goalAmt.toLocaleString()}원 중 ${spent.toLocaleString()}원 사용</div>
+            </div>
+            <div style="height:6px;background:var(--line);border-radius:3px;overflow:hidden;">
+              <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width 0.5s;"></div>
+            </div>
+            <div style="font-size:11px;color:var(--sub);margin-top:4px;text-align:right;">${pct}% 사용</div>`;
 
-          summaryCard.parentElement.insertBefore(wrap, summaryCard);
+          balanceCard.parentElement.insertBefore(wrap, balanceCard);
         });
         observer.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
@@ -679,7 +707,7 @@
             lastParent = parent;
             parent.style.position = 'relative';
             // 이전에 주입한 요소 제거
-            ['doni-theme-btn-left','doni-goal-amount-wrap','doni-sync-btn'].forEach(id => {
+            ['doni-theme-btn-left','doni-goal-amount-wrap','doni-history-wrap','doni-reset-btn','doni-sync-btn'].forEach(id => {
               document.getElementById(id)?.remove();
             });
 
@@ -711,15 +739,16 @@
                 ? `<span style="font-size:12px;color:var(--accent);font-weight:700;">${score.streak >= 6 ? '🎓' : score.streak >= 3 ? '🌿' : '🌱'} ${score.streak}개월 연속 성공 중</span>`
                 : `<span style="font-size:12px;color:var(--sub);">목표를 설정하고 습관을 만들어요</span>`;
 
+              const curGoalFormatted = curGoal ? curGoal.toLocaleString('ko-KR') : '';
               goalWrap.innerHTML = `
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
                   <span style="font-size:15px;font-weight:700;color:var(--ink);">🎯 이번 달 목표 지출</span>
                   ${streakBadge}
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
-                  <input id="doni-goal-amount-input" type="number" inputmode="numeric" placeholder="목표 금액 입력 (원)"
-                    value="${curGoal || ''}"
-                    style="flex:1;padding:12px 16px;border:1.5px solid var(--line);border-radius:50px;background:var(--bg);color:var(--ink);font-size:14px;font-family:inherit;outline:none;-moz-appearance:textfield;" />
+                  <input id="doni-goal-amount-input" type="text" inputmode="numeric" placeholder="목표 금액 입력 (원)"
+                    value="${curGoalFormatted}"
+                    style="flex:1;padding:12px 16px;border:1.5px solid var(--line);border-radius:50px;background:var(--bg);color:var(--ink);font-size:14px;font-family:inherit;outline:none;" />
                   <button id="doni-goal-amount-save" style="flex-shrink:0;padding:12px 18px;border:none;background:var(--ink);color:var(--bg);border-radius:50px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;">저장</button>
                 </div>
                 <div id="doni-goal-amount-msg" style="font-size:12px;color:var(--sub);margin-top:8px;padding-left:4px;"></div>
@@ -728,9 +757,21 @@
                   <span style="font-size:12px;color:var(--sub);">${score.streak}/6</span>
                 </div>`;
 
+              // 콤마 포맷 이벤트
+              const goalInput = goalWrap.querySelector('#doni-goal-amount-input');
+              goalInput.addEventListener('input', () => {
+                const raw = goalInput.value.replace(/[^0-9]/g, '');
+                const cursor = goalInput.selectionStart;
+                const prevLen = goalInput.value.length;
+                goalInput.value = raw ? parseInt(raw, 10).toLocaleString('ko-KR') : '';
+                const diff = goalInput.value.length - prevLen;
+                goalInput.setSelectionRange(cursor + diff, cursor + diff);
+              });
+
               // 저장 로직
               goalWrap.querySelector('#doni-goal-amount-save').onclick = () => {
-                const val = parseInt(goalWrap.querySelector('#doni-goal-amount-input').value, 10);
+                const raw = goalWrap.querySelector('#doni-goal-amount-input').value.replace(/[^0-9]/g, '');
+                const val = parseInt(raw, 10);
                 const msg = goalWrap.querySelector('#doni-goal-amount-msg');
                 if (!val || val <= 0) { msg.textContent = '올바른 금액을 입력해주세요.'; return; }
                 setGoalAmount(y, m, val);
@@ -751,25 +792,62 @@
               }
             }
 
-            // 전역 style 태그 주입으로 Vue 섹션 숨김 (parent 스코프 무관)
+            // 전역 style 태그 주입으로 Vue 섹션 숨김
             if (!document.getElementById('doni-settings-hide-style')) {
               const s = document.createElement('style');
               s.id = 'doni-settings-hide-style';
-              s.textContent = [
-                '.setting-card',
-                '.avail-row',
-                '.avail-label',
-                '.date-nav-wrap',
-                '.date-nav',
-                '.goal-label',
-                '.section-label',
-                '.clean-input'
-              ].map(c => c + '{display:none!important}').join('');
+              s.textContent = `
+                .setting-card,.avail-row,.avail-label,.date-nav-wrap,
+                .goal-label,.section-label,.clean-input{display:none!important}
+                .setting-page .date-nav{display:none!important}
+              `;
               document.head.appendChild(s);
             }
 
+            // 월별 달성 히스토리 섹션 주입
+            if (!parent.querySelector('#doni-history-wrap')) {
+              const score = getScore();
+              const histWrap = document.createElement('div');
+              histWrap.id = 'doni-history-wrap';
+              histWrap.style.cssText = 'margin:0 0 20px;';
+              const months = [];
+              const now2 = new Date();
+              for (let i = 5; i >= 0; i--) {
+                const d = new Date(now2.getFullYear(), now2.getMonth() - i, 1);
+                const y2 = d.getFullYear(), m2 = d.getMonth()+1;
+                const key2 = y2+'-'+m2;
+                const ga = getGoalAmount(y2, m2);
+                const sp = getMonthSpent(y2, m2);
+                const isDone = score.history ? score.history[key2] : false;
+                const isCurrent = (y2 === now2.getFullYear() && m2 === now2.getMonth()+1);
+                months.push({ label: m2+'월', ga, sp, isDone, isCurrent, key2 });
+              }
+              const rows = months.map(mo => {
+                if (!mo.ga) return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);opacity:0.4;"><span style="font-size:13px;color:var(--ink);">${mo.label}</span><span style="font-size:12px;color:var(--sub);">목표 미설정</span></div>`;
+                const pct = Math.min(100, Math.round(mo.sp/mo.ga*100));
+                const icon = mo.isCurrent ? '🎯' : mo.isDone ? '✅' : mo.sp > 0 ? '❌' : '–';
+                return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);">
+                  <span style="font-size:13px;color:var(--ink);font-weight:${mo.isCurrent?'700':'400'};">${icon} ${mo.label}</span>
+                  <div style="text-align:right;">
+                    <span style="font-size:12px;color:var(--sub);">${mo.sp.toLocaleString()}원 / ${mo.ga.toLocaleString()}원</span>
+                    <span style="margin-left:6px;font-size:12px;color:${pct>=100?'#E8342A':'var(--sub)'};">(${pct}%)</span>
+                  </div>
+                </div>`;
+              }).join('');
+              histWrap.innerHTML = `<div style="padding:20px;background:var(--white);border-radius:20px;box-shadow:var(--shadow-sm);">
+                <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:12px;">📅 최근 6개월 현황</div>
+                ${rows}
+              </div>`;
+              const goalWrapEl = parent.querySelector('#doni-goal-amount-wrap');
+              if (goalWrapEl && goalWrapEl.nextSibling) {
+                parent.insertBefore(histWrap, goalWrapEl.nextSibling);
+              } else {
+                parent.appendChild(histWrap);
+              }
+            }
+
             // 버튼 행 초기화/동기화로 변경
-            if (!document.getElementById('doni-sync-btn')) {
+            if (!parent.querySelector('#doni-reset-btn')) {
               const saveBtn = parent.querySelector('.btn-fill');
               if (saveBtn) {
                 saveBtn.style.display = 'none';
@@ -777,6 +855,7 @@
                 btnRow.style.cssText = 'display:flex;flex-direction:row;gap:8px;margin-bottom:40px;';
                 // 초기화 버튼은 완전히 새로 생성 (Vue 이벤트 없음 → 초기화만 실행)
                 const resetBtn = document.createElement('button');
+                resetBtn.id = 'doni-reset-btn';
                 resetBtn.textContent = '초기화';
                 resetBtn.onclick = async () => {
                   const ok = await window.doniConfirm('모든 데이터를 초기화할까요?');
