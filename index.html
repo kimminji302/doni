@@ -634,15 +634,14 @@
       // 홈탭 진행바 주입 (탭 재진입/월 이동 시에도 갱신)
       function injectHomeProgress() {
         let lastKey = null;
-        const observer = new MutationObserver(() => {
-          // .home-bottom 기준으로 감지 — balance-card보다 빠르게 잡힘
+
+        function tryRenderProgress() {
           const homeBottom = document.querySelector('.home-bottom');
           if (!homeBottom) {
             lastKey = null;
             document.getElementById('doni-progress-bar-wrap')?.remove();
             return;
           }
-          // 현재 표시 월 읽기
           const dateSpan = document.querySelector('.home-header .date-nav, .home-header [class*="date"]');
           let y, m;
           if (dateSpan) {
@@ -669,7 +668,7 @@
 
           const wrap = document.createElement('div');
           wrap.id = 'doni-progress-bar-wrap';
-          wrap.style.cssText = 'padding:0 0 16px;';
+          wrap.style.cssText = 'padding:0 0 16px;text-align:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:12px;';
 
           const barColor = pct >= 100 ? '#E8342A' : pct >= 80 ? '#f59e0b' : 'var(--accent)';
           const remainColor = remaining < 0 ? '#E8342A' : 'var(--ink)';
@@ -677,18 +676,22 @@
           const remainAmt = Math.abs(remaining).toLocaleString();
 
           wrap.innerHTML = `
-            <div style="margin-bottom:10px;">
-              <div style="font-size:11px;color:var(--sub);margin-bottom:2px;">${remainLabel}</div>
+            <div style="padding:14px 0 10px;">
+              <div style="font-size:11px;color:var(--sub);margin-bottom:4px;">${remainLabel}</div>
               <div style="font-size:28px;font-weight:800;color:${remainColor};letter-spacing:-0.5px;">${remaining < 0 ? '-' : ''}₩${remainAmt}</div>
-              <div style="font-size:11px;color:var(--sub);margin-top:2px;">목표 ${goalAmt.toLocaleString()}원 중 ${spent.toLocaleString()}원 사용</div>
+              <div style="font-size:11px;color:var(--sub);margin-top:4px;">목표 ${goalAmt.toLocaleString()}원 중 ${spent.toLocaleString()}원 사용</div>
             </div>
-            <div style="height:4px;background:var(--line);border-radius:2px;overflow:hidden;">
-              <div style="height:100%;width:${pct}%;background:${barColor};border-radius:2px;"></div>
+            <div style="height:3px;background:var(--line);border-radius:0;overflow:hidden;">
+              <div style="height:100%;width:${pct}%;background:${barColor};"></div>
             </div>`;
 
-          // home-bottom 첫 번째 자식으로 삽입 (즉시 표시)
           homeBottom.insertBefore(wrap, homeBottom.firstChild);
-        });
+        }
+
+        // 즉시 한 번 시도 (이미 홈탭이 렌더된 경우 대비)
+        tryRenderProgress();
+        // 이후 DOM 변화 감지 (탭 이동, 월 변경)
+        const observer = new MutationObserver(tryRenderProgress);
         observer.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
 
