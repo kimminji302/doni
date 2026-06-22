@@ -373,6 +373,7 @@
               injectLogoutButton();
               injectSettingButtons();
               injectHomeProgress();
+              injectChatHeader();
               checkMonthlyResult();
             }
           });
@@ -471,6 +472,12 @@
           const exps = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
           return exps.filter(e => e.year === year && e.month === month && (e.cost||0) > 0)
                      .reduce((s,e) => s + (e.cost||0), 0);
+        } catch(e) { return 0; }
+      }
+      function getMonthCount(year, month) {
+        try {
+          const exps = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
+          return exps.filter(e => e.year === year && e.month === month).length;
         } catch(e) { return 0; }
       }
 
@@ -693,6 +700,30 @@
         // 이후 DOM 변화 감지 (탭 이동, 월 변경)
         const observer = new MutationObserver(tryRenderProgress);
         observer.observe(document.getElementById('app'), { childList: true, subtree: true });
+      }
+
+      function injectChatHeader() {
+        function tryRender() {
+          const header = document.querySelector('.chat-header');
+          if (!header) { document.getElementById('doni-chat-count')?.remove(); return; }
+          const dateSpan = header.parentElement?.querySelector('.date-floater .eng');
+          let y, m;
+          if (dateSpan) {
+            const match = dateSpan.textContent.match(/(\d{4})\.\s*(\d{1,2})/);
+            if (match) { y = parseInt(match[1]); m = parseInt(match[2]); }
+          }
+          if (!y) { const now = new Date(); y = now.getFullYear(); m = now.getMonth()+1; }
+          const count = getMonthCount(y, m);
+          const existing = document.getElementById('doni-chat-count');
+          if (existing) { existing.textContent = `이번 달 ${count}건`; return; }
+          const el = document.createElement('span');
+          el.id = 'doni-chat-count';
+          el.textContent = `이번 달 ${count}건`;
+          el.style.cssText = 'font-size:12px;font-weight:600;color:var(--sub);';
+          header.appendChild(el);
+        }
+        tryRender();
+        new MutationObserver(tryRender).observe(document.getElementById('app'), { childList:true, subtree:true });
       }
 
       // 설정탭에 동기화/초기화 버튼 주입 (탭 재진입 시에도 재주입)
