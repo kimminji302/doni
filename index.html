@@ -135,6 +135,10 @@
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
+    /* 삼성 브라우저 "어둡게 보기" 강제 필터 차단 */
+    :root { color-scheme: light; }
+    :root[data-theme="dark"] { color-scheme: dark; }
+
     /* 한국어 줄바꿈 전체 적용 */
     * { word-break: keep-all; }
 
