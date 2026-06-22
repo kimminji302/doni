@@ -223,7 +223,8 @@
   </style>
   <script>
     (function() {
-      var t = localStorage.getItem('doni_theme') || 'light';
+      var saved = localStorage.getItem('doni_theme');
+      var t = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
       if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
     })();
   </script>
