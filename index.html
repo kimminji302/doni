@@ -949,12 +949,14 @@
                 btnRow.appendChild(resetBtn);
                 const syncBtn = document.createElement('button');
                 syncBtn.id = 'doni-sync-btn';
-                syncBtn.textContent = '동기화';
+                syncBtn.textContent = '데이터 불러오기';
                 syncBtn.style.cssText = 'flex:1;padding:13px;border:1px solid var(--line);background:transparent;color:var(--sub);border-radius:12px;font-size:13px;font-family:inherit;cursor:pointer;';
                 syncBtn.onclick = async () => {
                   const uid = window._currentUser?.id;
                   if (!uid) { await window.doniAlert('로그인이 필요해요.'); return; }
-                  syncBtn.textContent = '동기화 중...';
+                  const ok = await window.doniConfirm('다른 기기에서 기록한 내용을 가져옵니다.\n계속할까요?');
+                  if (!ok) return;
+                  syncBtn.textContent = '불러오는 중...';
                   syncBtn.disabled = true;
                   try {
                     const [expRes, setRes, planRes] = await Promise.all([
@@ -967,9 +969,9 @@
                     syncBtn.textContent = '완료!';
                     setTimeout(() => location.reload(), 800);
                   } catch(e) {
-                    syncBtn.textContent = '동기화';
+                    syncBtn.textContent = '데이터 불러오기';
                     syncBtn.disabled = false;
-                    await window.doniAlert('동기화 실패: ' + e.message);
+                    await window.doniAlert('불러오기 실패: ' + e.message);
                   }
                 };
                 btnRow.appendChild(syncBtn);
