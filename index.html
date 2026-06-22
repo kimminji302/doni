@@ -142,15 +142,6 @@
     /* 한국어 줄바꿈 전체 적용 */
     * { word-break: keep-all; }
 
-    /* 설정탭 Vue 원본 섹션 숨김 (목표지출금액 카드만 사용) */
-    .doni-settings-simplified .setting-card,
-    .doni-settings-simplified .avail-row,
-    .doni-settings-simplified .avail-label,
-    .doni-settings-simplified .date-nav-wrap,
-    .doni-settings-simplified .clean-input,
-    .doni-settings-simplified .goal-label,
-    .doni-settings-simplified .section-label,
-    .doni-settings-simplified .btn-fill { display: none !important; }
 
     /* 처음으로 버튼 항상 숨김 */
     .btn-text { display: none !important; }
@@ -760,8 +751,22 @@
               }
             }
 
-            // CSS 클래스로 Vue 섹션 숨김 (재렌더링해도 CSS는 유지됨)
-            parent.classList.add('doni-settings-simplified');
+            // 전역 style 태그 주입으로 Vue 섹션 숨김 (parent 스코프 무관)
+            if (!document.getElementById('doni-settings-hide-style')) {
+              const s = document.createElement('style');
+              s.id = 'doni-settings-hide-style';
+              s.textContent = [
+                '.setting-card',
+                '.avail-row',
+                '.avail-label',
+                '.date-nav-wrap',
+                '.date-nav',
+                '.goal-label',
+                '.section-label',
+                '.clean-input'
+              ].map(c => c + '{display:none!important}').join('');
+              document.head.appendChild(s);
+            }
 
             // 버튼 행 초기화/동기화로 변경
             if (!document.getElementById('doni-sync-btn')) {
