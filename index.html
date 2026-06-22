@@ -650,7 +650,7 @@
             return;
           }
           const dateSpan = document.querySelector('.home-header .date-nav, .home-header [class*="date"]');
-          let y, m;
+          let y=0, m=0;
           if (dateSpan) {
             const match = dateSpan.textContent.match(/(\d{4})\.\s*(\d{1,2})/);
             if (match) { y = parseInt(match[1]); m = parseInt(match[2]); }
@@ -695,8 +695,8 @@
           homeBottom.insertBefore(wrap, homeBottom.firstChild);
         }
 
-        // 즉시 한 번 시도 (이미 홈탭이 렌더된 경우 대비)
-        tryRenderProgress();
+        // Vue 렌더 완료 후 즉시 시도 (requestAnimationFrame으로 첫 렌더 지연 방지)
+        requestAnimationFrame(tryRenderProgress);
         // 이후 DOM 변화 감지 (탭 이동, 월 변경)
         const observer = new MutationObserver(tryRenderProgress);
         observer.observe(document.getElementById('app'), { childList: true, subtree: true });
@@ -709,7 +709,7 @@
           const el = document.getElementById('doni-chat-count');
           if (!header) { el?.remove(); _lastLabel = null; return; }
           const dateSpan = header.parentElement?.querySelector('.date-floater .eng');
-          let y, m;
+          let y=0, m=0;
           if (dateSpan) {
             const match = dateSpan.textContent.match(/(\d{4})\.\s*(\d{1,2})/);
             if (match) { y = parseInt(match[1]); m = parseInt(match[2]); }
@@ -1021,8 +1021,10 @@
         const cur = document.documentElement.getAttribute('data-theme') || 'light';
         const next = cur === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
-        document.querySelector('meta[name="color-scheme"]').content = next;
-        document.querySelector('meta[name="theme-color"]').content = next === 'dark' ? '#000000' : '#F9F7F2';
+        const csMeta = document.querySelector('meta[name="color-scheme"]');
+        if (csMeta) csMeta.content = next;
+        const tcMeta = document.querySelector('meta[name="theme-color"]');
+        if (tcMeta) tcMeta.content = next === 'dark' ? '#000000' : '#F9F7F2';
         const origSet = Storage.prototype.setItem;
         origSet.call(localStorage, 'doni_theme', next);
         const sunSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
