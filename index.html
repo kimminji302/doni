@@ -416,17 +416,20 @@
 
       // 설정탭 "이달의 약속" 페이지에 로그아웃 버튼 주입 (탭 재진입 시에도 재주입)
       function injectLogoutButton() {
+        let lastParent = null;
         const observer = new MutationObserver(() => {
-          if (document.getElementById('doni-logout-btn')) return;
           const titles = document.querySelectorAll('.page-title');
           titles.forEach(el => {
             if (el.textContent.includes('이달의 약속')) {
+              const parent = el.parentElement;
+              if (parent === lastParent) return;
+              lastParent = parent;
+              document.getElementById('doni-logout-btn')?.remove();
               const btn = document.createElement('button');
               btn.id = 'doni-logout-btn';
               btn.textContent = '로그아웃';
               btn.onclick = window.signOut;
               btn.style.cssText = 'position:absolute;top:16px;right:16px;background:none;border:1px solid var(--line);border-radius:8px;padding:6px 14px;font-family:inherit;font-size:12px;color:var(--sub);cursor:pointer;';
-              const parent = el.closest('.page-title')?.parentElement || el.parentElement;
               parent.style.position = 'relative';
               parent.appendChild(btn);
             }
@@ -662,15 +665,24 @@
 
       // 설정탭에 동기화/초기화 버튼 주입 (탭 재진입 시에도 재주입)
       function injectSettingButtons() {
+        let lastParent = null;
         const observer = new MutationObserver(() => {
-          // disconnect 하지 않음 — Vue가 탭 재렌더링해도 계속 감지
           const titles = document.querySelectorAll('.page-title');
+          let found = false;
           titles.forEach(el => {
             if (!el.textContent.includes('이달의 약속')) return;
-            const parent = el.closest('.page-title')?.parentElement || el.parentElement;
+            found = true;
+            const parent = el.parentElement;
+            // Vue가 설정탭을 새로 렌더링하면 parent가 바뀜 → 재주입
+            if (parent === lastParent) return;
+            lastParent = parent;
             parent.style.position = 'relative';
+            // 이전에 주입한 요소 제거
+            ['doni-theme-btn-left','doni-goal-amount-wrap','doni-sync-btn'].forEach(id => {
+              document.getElementById(id)?.remove();
+            });
 
-            // 다크모드 토글 아이콘 (상단 왼쪽, 원래 초기화 자리)
+            // 다크모드 토글 아이콘 (상단 왼쪽)
             if (!document.getElementById('doni-theme-btn-left')) {
               const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
               const themeBtn = document.createElement('button');
@@ -738,10 +750,12 @@
               }
             }
 
-            // Vue가 렌더링한 수입/고정비/목표텍스트 섹션 전부 숨김 (목표 지출 금액만 사용)
-            parent.querySelectorAll('.setting-section, .setting-item, .clean-input, .input-group').forEach(el => {
+            // Vue가 렌더링한 수입/고정비/목표텍스트 섹션 전부 숨김
+            parent.querySelectorAll('.setting-card, .avail-row, .avail-label, .section-label, .field-label, .goal-label, .clean-input, .detail-list, .detail-toggle').forEach(el => {
               el.style.display = 'none';
             });
+            // btn-fill (원래 저장 버튼)도 숨김
+            parent.querySelectorAll('.btn-fill').forEach(el => { el.style.display = 'none'; });
 
             // 버튼 행 초기화/동기화로 변경
             if (!document.getElementById('doni-sync-btn')) {
