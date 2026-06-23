@@ -567,74 +567,82 @@
         const userName = window._currentUser?.user_metadata?.full_name || window._currentUser?.email || '도니 사용자';
         const dateStr = score.graduatedAt ? new Date(score.graduatedAt).toLocaleDateString('ko-KR') : new Date().toLocaleDateString('ko-KR');
         const streakStr = score.streak;
-        const totalStr = score.totalSuccess;
 
         const canvas = document.createElement('canvas');
         canvas.width = 600; canvas.height = 800;
         const ctx = canvas.getContext('2d');
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        const bg = isDark ? '#111111' : '#F9F7F2';
-        const ink = isDark ? '#FFFFFF' : '#3D2B1F';
-        const sub = isDark ? '#888888' : '#7D5A3C';
-        const accent = '#E8342A';
+        const bg = isDark ? '#1A1612' : '#F9F7F2';
+        const ink = isDark ? '#F9F7F2' : '#3D2B1F';
+        const muted = isDark ? '#8A7A6A' : '#B8A898';
+        const gold = '#C9A84C';
 
-        const headerBg = isDark ? accent : '#3D2B1F';
-        const headerTxt = '#F9F7F2';
-        const muted = isDark ? '#888888' : '#999999';
+        function drawCert(doniImg) {
+          // 배경
+          ctx.fillStyle = bg; ctx.fillRect(0,0,600,800);
 
-        // 배경
-        ctx.fillStyle = bg; ctx.fillRect(0,0,600,800);
+          // 상단 골드 라인
+          ctx.fillStyle = gold; ctx.fillRect(0,0,600,4);
 
-        // 상단 컬러 블록
-        ctx.fillStyle = headerBg; ctx.fillRect(0,0,600,90);
-        ctx.fillStyle = headerTxt; ctx.textAlign = 'center';
-        ctx.font = '500 11px sans-serif';
-        ctx.fillText('CERTIFICATE  OF  GRADUATION', 300, 42);
-        ctx.font = '12px sans-serif'; ctx.fillStyle = 'rgba(249,247,242,0.55)';
-        ctx.fillText('doniapp.kr', 300, 68);
+          // 돈이 이미지
+          if (doniImg) ctx.drawImage(doniImg, 252, 28, 96, 96);
 
-        // 포인트 라인
-        ctx.strokeStyle = accent; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(270,120); ctx.lineTo(330,120); ctx.stroke();
+          // CERTIFICATE 레이블
+          ctx.fillStyle = muted; ctx.textAlign = 'center';
+          ctx.font = '500 11px sans-serif';
+          ctx.fillText('CERTIFICATE  OF  GRADUATION', 300, 152);
 
-        // 이름 섹션
-        ctx.fillStyle = muted; ctx.font = '13px sans-serif';
-        ctx.fillText('이 졸업장은', 300, 168);
-        ctx.fillStyle = ink; ctx.font = 'bold 30px sans-serif';
-        ctx.fillText(userName + ' 님', 300, 215);
-        ctx.fillStyle = muted; ctx.font = '14px sans-serif';
-        ctx.fillText('께서 돈이 소비습관 과정을', 300, 256);
-        ctx.fillText('성공적으로 마쳤음을 증명합니다.', 300, 283);
+          // 이름 섹션
+          ctx.fillStyle = muted; ctx.font = '14px sans-serif';
+          ctx.fillText('이 졸업장은', 300, 202);
+          ctx.fillStyle = ink; ctx.font = 'bold 32px sans-serif';
+          ctx.fillText(userName + ' 님', 300, 252);
+          ctx.fillStyle = muted; ctx.font = '15px sans-serif';
+          ctx.fillText('께서 돈이 소비습관 과정을', 300, 296);
+          ctx.fillText('성공적으로 마쳤음을 증명합니다.', 300, 326);
 
-        // 구분선
-        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(60,318); ctx.lineTo(540,318); ctx.stroke();
+          // 구분선
+          ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(60,360); ctx.lineTo(540,360); ctx.stroke();
 
-        // 숫자 섹션 — 연속 달성 (중앙)
-        ctx.fillStyle = accent; ctx.font = 'bold 64px sans-serif';
-        ctx.fillText(String(streakStr), 300, 400);
-        ctx.fillStyle = muted; ctx.font = '12px sans-serif';
-        ctx.fillText('개월 연속 달성', 300, 430);
+          // 연속 달성 숫자 (중앙)
+          ctx.fillStyle = gold; ctx.font = 'bold 72px sans-serif';
+          ctx.fillText(String(streakStr), 300, 460);
+          ctx.fillStyle = muted; ctx.font = '13px sans-serif';
+          ctx.fillText('개월 연속 달성', 300, 494);
 
-        // 구분선
-        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(60,458); ctx.lineTo(540,458); ctx.stroke();
+          // 구분선
+          ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(60,528); ctx.lineTo(540,528); ctx.stroke();
 
-        // 졸업일
-        ctx.fillStyle = muted; ctx.font = '12px sans-serif';
-        ctx.fillText(`졸업일  ${dateStr}`, 300, 500);
+          // 졸업일
+          ctx.fillStyle = muted; ctx.font = '12px sans-serif';
+          ctx.fillText(`졸업일 · ${dateStr}`, 300, 568);
 
-        // 하단 포인트 라인
-        ctx.strokeStyle = accent; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(270,540); ctx.lineTo(330,540); ctx.stroke();
+          // 하단 데코 + 글귀
+          const lineW = 100;
+          ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.09)';
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(60, 620); ctx.lineTo(60+lineW, 620); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(540-lineW, 620); ctx.lineTo(540, 620); ctx.stroke();
+          ctx.fillStyle = ink; ctx.font = 'italic 16px Georgia, serif';
+          ctx.fillText("don't worry, be doni", 300, 626);
+        }
 
-        // 브랜드
-        ctx.fillStyle = accent; ctx.font = 'bold 22px sans-serif';
-        ctx.fillText('돈이', 300, 592);
+        const doniImg = new Image();
+        doniImg.onload = () => {
+          drawCert(doniImg);
+          showPopup(canvas.toDataURL('image/png'));
+        };
+        doniImg.onerror = () => {
+          drawCert(null);
+          showPopup(canvas.toDataURL('image/png'));
+        };
+        doniImg.src = '/doni.gif';
 
-        const dataUrl = canvas.toDataURL('image/png');
+        function showPopup(dataUrl) {
         const backdrop = document.createElement('div');
         backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;';
         const img = document.createElement('img');
@@ -663,6 +671,7 @@
         backdrop.appendChild(img); backdrop.appendChild(btnWrap);
         backdrop.onclick = e => { if(e.target===backdrop) backdrop.remove(); };
         document.body.appendChild(backdrop);
+        } // showPopup end
       }
       window.showGraduationCert = showGraduationCert;
 
