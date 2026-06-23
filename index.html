@@ -635,7 +635,7 @@
             const blob = await res.blob();
             const file = new File([blob], 'doni-graduation.png', {type:'image/png'});
             if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
-              await navigator.share({ title:'돈이 졸업장', text:'나 드디어 돈이 졸업했어! 6개월 연속 소비 목표 달성 🎓', files:[file] });
+              await navigator.share({ title:'돈이 졸업장', files:[file] });
             } else {
               const a = document.createElement('a'); a.href = dataUrl; a.download = 'doni-graduation.png'; a.click();
             }
