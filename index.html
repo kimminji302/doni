@@ -611,22 +611,11 @@
         ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(60,318); ctx.lineTo(540,318); ctx.stroke();
 
-        // 숫자 섹션 — 연속 달성 (왼쪽)
-        ctx.fillStyle = accent; ctx.font = 'bold 48px sans-serif';
-        ctx.fillText(String(streakStr), 180, 398);
-        ctx.fillStyle = muted; ctx.font = '11px sans-serif';
-        ctx.fillText('연속 달성 (개월)', 180, 424);
-
-        // 중앙 세로선
-        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(300,345); ctx.lineTo(300,438); ctx.stroke();
-
-        // 누적 성공 (오른쪽)
-        ctx.fillStyle = ink; ctx.font = 'bold 48px sans-serif';
-        ctx.fillText(String(totalStr), 420, 398);
-        ctx.fillStyle = muted; ctx.font = '11px sans-serif';
-        ctx.fillText('누적 성공 (개월)', 420, 424);
+        // 숫자 섹션 — 연속 달성 (중앙)
+        ctx.fillStyle = accent; ctx.font = 'bold 64px sans-serif';
+        ctx.fillText(String(streakStr), 300, 400);
+        ctx.fillStyle = muted; ctx.font = '12px sans-serif';
+        ctx.fillText('개월 연속 달성', 300, 430);
 
         // 구분선
         ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
