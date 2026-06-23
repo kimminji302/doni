@@ -654,6 +654,7 @@
         backdrop.onclick = e => { if(e.target===backdrop) backdrop.remove(); };
         document.body.appendChild(backdrop);
       }
+      window.showGraduationCert = showGraduationCert;
 
       // 홈탭 진행바 주입 (탭 재진입/월 이동 시에도 갱신)
       function injectHomeProgress() {
