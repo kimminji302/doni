@@ -627,29 +627,15 @@
         btnWrap.style.cssText = 'display:flex;gap:10px;width:100%;max-width:300px;';
 
         const shareBtn = document.createElement('button');
-        shareBtn.textContent = '공유하기';
+        shareBtn.textContent = '이미지 저장';
         shareBtn.style.cssText = 'flex:1;padding:14px;background:#fff;color:#000;border:none;border-radius:50px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;';
-        shareBtn.onclick = async () => {
-          if (shareBtn.disabled) return;
-          shareBtn.disabled = true;
-          shareBtn.textContent = '공유 중...';
-          try {
-            const res = await fetch(dataUrl);
-            const blob = await res.blob();
-            const file = new File([blob], 'doni-graduation.png', {type:'image/png'});
-            if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
-              img.style.display = 'none';
-              await navigator.share({ title:'돈이 졸업장', text:'나 드디어 돈이 졸업했어! 6개월 연속 소비 목표 달성 🎓', files:[file] });
-              img.style.display = '';
-            } else {
-              const a = document.createElement('a'); a.href = dataUrl; a.download = 'doni-graduation.png'; a.click();
-            }
-          } catch(e) {
-            img.style.display = '';
-            const a = document.createElement('a'); a.href = dataUrl; a.download = 'doni-graduation.png'; a.click();
-          }
-          shareBtn.disabled = false;
-          shareBtn.textContent = '공유하기';
+        shareBtn.onclick = () => {
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = 'doni-graduation.png';
+          a.click();
+          shareBtn.textContent = '저장 완료!';
+          setTimeout(() => { shareBtn.textContent = '이미지 저장'; }, 2000);
         };
 
         const closeBtn = document.createElement('button');
