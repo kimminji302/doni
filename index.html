@@ -584,8 +584,11 @@
           // 상단 골드 라인
           ctx.fillStyle = gold; ctx.fillRect(0,0,600,4);
 
-          // 돈이 이미지
-          if (doniImg) ctx.drawImage(doniImg, 252, 28, 96, 96);
+          // 돈이 이미지 (비율 유지, 가로 140px 기준)
+          if (doniImg) {
+            const imgW = 140, imgH = Math.round(140 * doniImg.naturalHeight / doniImg.naturalWidth);
+            ctx.drawImage(doniImg, 300 - imgW/2, 20, imgW, imgH);
+          }
 
           // CERTIFICATE 레이블
           ctx.fillStyle = muted; ctx.textAlign = 'center';
