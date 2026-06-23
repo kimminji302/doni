@@ -963,20 +963,21 @@
                 };
                 resetBtn.style.cssText = 'flex:1 !important;padding:13px !important;border:1px solid var(--line) !important;background:transparent !important;color:var(--sub) !important;border-radius:12px !important;font-size:13px !important;font-family:inherit !important;font-weight:normal !important;cursor:pointer !important;box-shadow:none !important;transform:none !important;';
                 btnRow.appendChild(resetBtn);
-                const syncBtn = document.createElement('button');
-                syncBtn.id = 'doni-sync-btn';
-                syncBtn.textContent = '데이터 불러오기';
-                syncBtn.style.cssText = 'flex:1;padding:13px;border:1px solid var(--line);background:transparent;color:var(--sub);border-radius:12px;font-size:13px;font-family:inherit;cursor:pointer;';
-                syncBtn.onclick = async () => {
+                const saveBtn = document.createElement('button');
+                saveBtn.id = 'doni-sync-btn';
+                saveBtn.textContent = '기록 저장';
+                saveBtn.style.cssText = 'flex:1;padding:13px;border:1px solid var(--line);background:transparent;color:var(--sub);border-radius:12px;font-size:13px;font-family:inherit;cursor:pointer;';
+                saveBtn.onclick = async () => {
                   const uid = window._currentUser?.id;
                   if (!uid) { await window.doniAlert('로그인이 필요해요.'); return; }
-                  const ok = await window.doniConfirm('다른 기기에서 기록한 내용을 가져옵니다.\n계속할까요?');
+                  const ok = await window.doniConfirm('이 기기의 기록과 서버의 기록을 합칩니다.\n계속할까요?');
                   if (!ok) return;
-                  syncBtn.textContent = '불러오는 중...';
-                  syncBtn.disabled = true;
+                  saveBtn.textContent = '저장 중...';
+                  saveBtn.disabled = true;
                   try {
                     const sb = window._sb;
                     if (!sb) throw new Error('연결 오류');
+                    const origGet = Storage.prototype.getItem.bind(localStorage);
                     const origSet = Storage.prototype.setItem.bind(localStorage);
                     const [expRes, setRes, planRes] = await Promise.all([
                       sb.from('expenses').select('*').eq('user_id', uid),
@@ -985,55 +986,35 @@
                     ]);
                     const errs = [expRes.error, setRes.error, planRes.error].filter(Boolean);
                     if (errs.length > 0) throw new Error(errs[0].message);
-                    const expCount = expRes.data?.length || 0;
-                    const setCount = setRes.data?.length || 0;
-                    if (expCount === 0 && setCount === 0) {
-                      syncBtn.textContent = '데이터 불러오기';
-                      syncBtn.disabled = false;
-                      await window.doniAlert('서버에 저장된 기록이 없어요.\n이 기기에서 먼저 "이 기기 데이터 업로드"를 해주세요.');
-                      return;
-                    }
-                    if (expCount > 0) {
-                      const arr = expRes.data.map(e => ({ id: e.id, year: e.year, month: e.month, fullDate: e.full_date, item: e.item, cost: e.cost, tag: e.tag, customHash: e.custom_hash }));
-                      origSet('doni_exp_v3', JSON.stringify(arr));
-                    }
-                    if (setCount > 0) {
-                      const obj = {};
-                      setRes.data.forEach(s => { obj[s.year + '-' + s.month] = s.data; });
-                      origSet('doni_set_v3', JSON.stringify(obj));
-                    }
-                    if (planRes.data && planRes.data.length > 0) {
-                      const arr = planRes.data.map(p => ({ id: p.id, item: p.item, cost: p.cost, tag: p.tag, reason: p.reason, doniReply: p.doni_reply, status: p.status }));
-                      origSet('doni_plan_v3', JSON.stringify(arr));
-                    }
-                    syncBtn.textContent = `${expCount}건 불러오기 완료!`;
+                    let localExp = []; try { localExp = JSON.parse(origGet('doni_exp_v3') || '[]'); } catch(e) {}
+                    let localSet = {}; try { localSet = JSON.parse(origGet('doni_set_v3') || '{}'); } catch(e) {}
+                    let localPlan = []; try { localPlan = JSON.parse(origGet('doni_plan_v3') || '[]'); } catch(e) {}
+                    const remoteExp = (expRes.data || []).map(e => ({ id: e.id, year: e.year, month: e.month, fullDate: e.full_date, item: e.item, cost: e.cost, tag: e.tag, customHash: e.custom_hash }));
+                    const expMap = {};
+                    remoteExp.forEach(e => { expMap[e.id] = e; });
+                    localExp.forEach(e => { expMap[e.id] = e; });
+                    const mergedExp = Object.values(expMap);
+                    const mergedSet = {};
+                    (setRes.data || []).forEach(s => { mergedSet[s.year + '-' + s.month] = s.data; });
+                    Object.assign(mergedSet, localSet);
+                    const remotePlan = (planRes.data || []).map(p => ({ id: p.id, item: p.item, cost: p.cost, tag: p.tag, reason: p.reason, doniReply: p.doni_reply, status: p.status }));
+                    const planMap = {};
+                    remotePlan.forEach(p => { planMap[p.id] = p; });
+                    localPlan.forEach(p => { planMap[p.id] = p; });
+                    const mergedPlan = Object.values(planMap);
+                    origSet('doni_exp_v3', JSON.stringify(mergedExp));
+                    origSet('doni_set_v3', JSON.stringify(mergedSet));
+                    origSet('doni_plan_v3', JSON.stringify(mergedPlan));
+                    await window.doniSync();
+                    saveBtn.textContent = `${mergedExp.length}건 저장 완료!`;
                     setTimeout(() => location.reload(), 1000);
                   } catch(e) {
-                    syncBtn.textContent = '데이터 불러오기';
-                    syncBtn.disabled = false;
-                    await window.doniAlert('불러오기 실패: ' + e.message);
+                    saveBtn.textContent = '기록 저장';
+                    saveBtn.disabled = false;
+                    await window.doniAlert('저장 실패: ' + e.message);
                   }
                 };
-                btnRow.appendChild(syncBtn);
-
-                // 이 기기 데이터 업로드 버튼
-                if (!document.getElementById('doni-upload-btn')) {
-                  const uploadBtn = document.createElement('button');
-                  uploadBtn.id = 'doni-upload-btn';
-                  uploadBtn.textContent = '이 기기 데이터 업로드';
-                  uploadBtn.style.cssText = 'width:100%;margin-top:8px;padding:13px;border:1px solid var(--line);background:transparent;color:var(--sub);border-radius:12px;font-size:13px;font-family:inherit;cursor:pointer;';
-                  uploadBtn.onclick = async () => {
-                    const ok = await window.doniConfirm('이 기기의 기록을 서버에 올립니다.\n다른 기기에서 불러올 수 있게 됩니다.');
-                    if (!ok) return;
-                    uploadBtn.textContent = '업로드 중...';
-                    uploadBtn.disabled = true;
-                    const result = await window.doniSync();
-                    uploadBtn.textContent = result ? '업로드 완료!' : '업로드 실패';
-                    uploadBtn.disabled = false;
-                    setTimeout(() => { uploadBtn.textContent = '이 기기 데이터 업로드'; }, 2000);
-                  };
-                  btnRow.parentElement.insertBefore(uploadBtn, btnRow.nextSibling);
-                }
+                btnRow.appendChild(saveBtn);
               }
             }
           });
