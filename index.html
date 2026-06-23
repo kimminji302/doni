@@ -578,45 +578,72 @@
         const sub = isDark ? '#888888' : '#7D5A3C';
         const accent = '#E8342A';
 
+        const headerBg = isDark ? accent : '#3D2B1F';
+        const headerTxt = '#F9F7F2';
+        const muted = isDark ? '#888888' : '#999999';
+
+        // 배경
         ctx.fillStyle = bg; ctx.fillRect(0,0,600,800);
-        ctx.strokeStyle = accent; ctx.lineWidth = 6;
-        ctx.strokeRect(20,20,560,760);
-        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.2)' : 'rgba(61,43,31,0.15)';
-        ctx.lineWidth = 1; ctx.strokeRect(30,30,540,740);
 
-        ctx.fillStyle = ink; ctx.textAlign = 'center';
-        ctx.font = 'bold 28px sans-serif'; ctx.fillText('🎓 졸업장', 300, 120);
-        ctx.font = '16px sans-serif'; ctx.fillStyle = sub;
-        ctx.fillText('Certificate of Graduation', 300, 155);
+        // 상단 컬러 블록
+        ctx.fillStyle = headerBg; ctx.fillRect(0,0,600,90);
+        ctx.fillStyle = headerTxt; ctx.textAlign = 'center';
+        ctx.font = '500 11px sans-serif';
+        ctx.fillText('CERTIFICATE  OF  GRADUATION', 300, 42);
+        ctx.font = '12px sans-serif'; ctx.fillStyle = 'rgba(249,247,242,0.55)';
+        ctx.fillText('doniapp.kr', 300, 68);
 
-        ctx.fillStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(61,43,31,0.05)';
-        ctx.fillRect(60,190,480,2);
+        // 포인트 라인
+        ctx.strokeStyle = accent; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(270,120); ctx.lineTo(330,120); ctx.stroke();
 
-        ctx.fillStyle = ink; ctx.font = '14px sans-serif';
-        ctx.fillText('이 졸업장은', 300, 240);
-        ctx.font = 'bold 26px sans-serif';
-        ctx.fillText(userName + ' 님', 300, 285);
-        ctx.font = '14px sans-serif'; ctx.fillStyle = sub;
-        ctx.fillText('께서 돈이 소비습관 과정을', 300, 320);
-        ctx.fillText('성공적으로 마쳤음을 증명합니다.', 300, 350);
+        // 이름 섹션
+        ctx.fillStyle = muted; ctx.font = '13px sans-serif';
+        ctx.fillText('이 졸업장은', 300, 168);
+        ctx.fillStyle = ink; ctx.font = 'bold 30px sans-serif';
+        ctx.fillText(userName + ' 님', 300, 215);
+        ctx.fillStyle = muted; ctx.font = '14px sans-serif';
+        ctx.fillText('께서 돈이 소비습관 과정을', 300, 256);
+        ctx.fillText('성공적으로 마쳤음을 증명합니다.', 300, 283);
 
-        ctx.fillStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(61,43,31,0.05)';
-        ctx.fillRect(60,380,480,2);
+        // 구분선
+        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(60,318); ctx.lineTo(540,318); ctx.stroke();
 
+        // 숫자 섹션 — 연속 달성 (왼쪽)
+        ctx.fillStyle = accent; ctx.font = 'bold 48px sans-serif';
+        ctx.fillText(String(streakStr), 180, 398);
+        ctx.fillStyle = muted; ctx.font = '11px sans-serif';
+        ctx.fillText('연속 달성 (개월)', 180, 424);
+
+        // 중앙 세로선
+        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(300,345); ctx.lineTo(300,438); ctx.stroke();
+
+        // 누적 성공 (오른쪽)
         ctx.fillStyle = ink; ctx.font = 'bold 48px sans-serif';
-        ctx.fillText('🏆', 300, 460);
+        ctx.fillText(String(totalStr), 420, 398);
+        ctx.fillStyle = muted; ctx.font = '11px sans-serif';
+        ctx.fillText('누적 성공 (개월)', 420, 424);
 
-        ctx.font = '13px sans-serif'; ctx.fillStyle = sub;
-        ctx.fillText(`연속 달성 ${streakStr}개월 · 누적 성공 ${totalStr}개월`, 300, 510);
-        ctx.fillText(`졸업일: ${dateStr}`, 300, 540);
+        // 구분선
+        ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(60,458); ctx.lineTo(540,458); ctx.stroke();
 
-        ctx.fillStyle = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(61,43,31,0.05)';
-        ctx.fillRect(60,570,480,2);
+        // 졸업일
+        ctx.fillStyle = muted; ctx.font = '12px sans-serif';
+        ctx.fillText(`졸업일  ${dateStr}`, 300, 500);
 
-        ctx.fillStyle = accent; ctx.font = 'bold 18px sans-serif';
-        ctx.fillText('돈이', 300, 630);
-        ctx.fillStyle = sub; ctx.font = '12px sans-serif';
-        ctx.fillText('doniapp.kr', 300, 655);
+        // 하단 포인트 라인
+        ctx.strokeStyle = accent; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(270,540); ctx.lineTo(330,540); ctx.stroke();
+
+        // 브랜드
+        ctx.fillStyle = accent; ctx.font = 'bold 22px sans-serif';
+        ctx.fillText('돈이', 300, 592);
 
         const dataUrl = canvas.toDataURL('image/png');
         const backdrop = document.createElement('div');
