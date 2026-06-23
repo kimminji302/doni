@@ -963,17 +963,17 @@
                 };
                 resetBtn.style.cssText = 'flex:1 !important;padding:13px !important;border:1px solid var(--line) !important;background:transparent !important;color:var(--sub) !important;border-radius:12px !important;font-size:13px !important;font-family:inherit !important;font-weight:normal !important;cursor:pointer !important;box-shadow:none !important;transform:none !important;';
                 btnRow.appendChild(resetBtn);
-                const saveBtn = document.createElement('button');
-                saveBtn.id = 'doni-sync-btn';
-                saveBtn.textContent = '기록 저장';
-                saveBtn.style.cssText = 'flex:1;padding:13px;border:1px solid var(--line);background:transparent;color:var(--sub);border-radius:12px;font-size:13px;font-family:inherit;cursor:pointer;';
-                saveBtn.onclick = async () => {
+                const syncSaveBtn = document.createElement('button');
+                syncSaveBtn.id = 'doni-sync-btn';
+                syncSaveBtn.textContent = '기록 저장';
+                syncSaveBtn.style.cssText = 'flex:1;padding:13px;border:1px solid var(--line);background:transparent;color:var(--sub);border-radius:12px;font-size:13px;font-family:inherit;cursor:pointer;';
+                syncSaveBtn.onclick = async () => {
                   const uid = window._currentUser?.id;
                   if (!uid) { await window.doniAlert('로그인이 필요해요.'); return; }
                   const ok = await window.doniConfirm('이 기기의 기록과 서버의 기록을 합칩니다.\n계속할까요?');
                   if (!ok) return;
-                  saveBtn.textContent = '저장 중...';
-                  saveBtn.disabled = true;
+                  syncSaveBtn.textContent = '저장 중...';
+                  syncSaveBtn.disabled = true;
                   try {
                     const sb = window._sb;
                     if (!sb) throw new Error('연결 오류');
@@ -1006,15 +1006,15 @@
                     origSet('doni_set_v3', JSON.stringify(mergedSet));
                     origSet('doni_plan_v3', JSON.stringify(mergedPlan));
                     await window.doniSync();
-                    saveBtn.textContent = `${mergedExp.length}건 저장 완료!`;
+                    syncSaveBtn.textContent = `${mergedExp.length}건 저장 완료!`;
                     setTimeout(() => location.reload(), 1000);
                   } catch(e) {
-                    saveBtn.textContent = '기록 저장';
-                    saveBtn.disabled = false;
+                    syncSaveBtn.textContent = '기록 저장';
+                    syncSaveBtn.disabled = false;
                     await window.doniAlert('저장 실패: ' + e.message);
                   }
                 };
-                btnRow.appendChild(saveBtn);
+                btnRow.appendChild(syncSaveBtn);
               }
             }
           });
