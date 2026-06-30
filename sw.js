@@ -24,6 +24,23 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+self.addEventListener('push', e => {
+  const data = e.data?.json() || {};
+  e.waitUntil(
+    self.registration.showNotification(data.title || '돈이 🪙', {
+      body: data.body || '오늘 소비 기록했어요? 🌿',
+      icon: '/home.png',
+      badge: '/favicon.png',
+      data: { url: '/' }
+    })
+  );
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(clients.openWindow(e.notification.data?.url || '/'));
+});
+
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
