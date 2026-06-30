@@ -18,9 +18,9 @@ async function sendPushToAll() {
   if (error) { console.error('fetch error', error); return; }
 
   const messages = [
-    { title: '돈이 🪙', body: '오늘 소비 기록했어요? 🌿' },
-    { title: '돈이 🪙', body: '오늘 하루 어떻게 썼는지 기록해봐요 ☁️' },
-    { title: '돈이 🪙', body: '작은 기록이 습관을 만들어요 🌱' },
+    { title: '돈이', body: '오늘 소비 기록 했어요?' },
+    { title: '돈이', body: '오늘 하루 어떻게 썼는지 기록해봐요' },
+    { title: '돈이', body: '작은 기록이 습관을 만들어요' },
   ];
   const msg = messages[Math.floor(Math.random() * messages.length)];
 

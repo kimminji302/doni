@@ -28,8 +28,8 @@ self.addEventListener('push', e => {
   let data = {};
   try { data = e.data?.json() || {}; } catch(_) { data = { title: '돈이 🪙', body: e.data?.text() || '' }; }
   e.waitUntil(
-    self.registration.showNotification(data.title || '돈이 🪙', {
-      body: data.body || '오늘 소비 기록했어요? 🌿',
+    self.registration.showNotification(data.title || '돈이', {
+      body: data.body || '오늘 소비 기록 했어요?',
       icon: '/home.png',
       badge: '/favicon.png',
       data: { url: '/' }
