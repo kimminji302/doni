@@ -829,7 +829,7 @@
             lastParent = parent;
             parent.style.position = 'relative';
             // 이전에 주입한 요소 제거
-            ['doni-theme-btn-left','doni-goal-amount-wrap','doni-history-wrap','doni-reset-btn','doni-sync-btn'].forEach(id => {
+            ['doni-theme-btn-left','doni-goal-amount-wrap','doni-history-wrap','doni-notif-row','doni-reset-btn','doni-sync-btn'].forEach(id => {
               document.getElementById(id)?.remove();
             });
 
@@ -996,6 +996,36 @@
               } else {
                 parent.appendChild(histWrap);
               }
+            }
+
+            // 알림 설정 토글
+            if (!parent.querySelector('#doni-notif-row')) {
+              const notifRow = document.createElement('div');
+              notifRow.id = 'doni-notif-row';
+              notifRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--white);border-radius:16px;box-shadow:var(--shadow-sm);margin-bottom:12px;';
+              const permission = ('Notification' in window) ? Notification.permission : 'unsupported';
+              const isOn = permission === 'granted';
+              notifRow.innerHTML = `
+                <div>
+                  <div style="font-size:14px;font-weight:600;color:var(--ink);">소비 리마인더 알림</div>
+                  <div id="doni-notif-status" style="font-size:12px;color:var(--sub);margin-top:2px;">${isOn ? '매일 저녁 8시에 알림을 보내드려요' : '알림이 꺼져있어요'}</div>
+                </div>
+                <div id="doni-notif-toggle" style="width:44px;height:26px;border-radius:13px;background:${isOn ? 'var(--accent,#5B8DEF)' : 'var(--line)'};position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;">
+                  <div style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:3px;left:${isOn ? '21px' : '3px'};transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.2);"></div>
+                </div>`;
+              notifRow.querySelector('#doni-notif-toggle').onclick = async () => {
+                if (permission === 'granted') {
+                  await window.doniAlert('알림을 끄려면 브라우저 설정에서 doniapp.kr 알림을 차단해주세요.');
+                } else if (permission === 'denied') {
+                  await window.doniAlert('브라우저 설정에서 doniapp.kr 알림을 허용해주세요.');
+                } else {
+                  await window.requestPushPermission();
+                  location.reload();
+                }
+              };
+              const saveBtn = parent.querySelector('.btn-fill');
+              if (saveBtn) saveBtn.parentElement.before(notifRow);
+              else parent.appendChild(notifRow);
             }
 
             // 버튼 행 초기화/동기화로 변경
