@@ -1041,7 +1041,7 @@
                 const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
                 const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
                 if (isIOS && !isStandalone) {
-                  await window.doniAlert('아이폰에서 알림을 받으려면\nSafari 하단 공유 버튼 → "홈 화면에 추가" 로 앱을 설치한 후 사용해주세요.');
+                  await window.doniAlert('아이폰에서 알림을 받으려면\n① Safari로 doniapp.kr 접속\n② 하단 공유 버튼 → "홈 화면에 추가"\n③ 설치된 앱에서 알림 켜기');
                   return;
                 }
                 const currentPermission = ('Notification' in window) ? Notification.permission : 'unsupported';
