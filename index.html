@@ -1018,10 +1018,17 @@
                 <div id="doni-notif-toggle" style="width:44px;height:26px;border-radius:13px;background:${isOn ? 'var(--accent,#5B8DEF)' : 'var(--line)'};position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;">
                   <div style="width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:3px;left:${isOn ? '21px' : '3px'};transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.2);"></div>
                 </div>`;
-              notifRow.querySelector('#doni-notif-toggle').onclick = async () => {
+              const toggleEl = notifRow.querySelector('#doni-notif-toggle');
+              const toggleKnob = toggleEl.querySelector('div');
+              const statusEl = notifRow.querySelector('#doni-notif-status');
+              const setToggleOn = () => {
+                toggleEl.style.background = 'var(--accent,#5B8DEF)';
+                toggleKnob.style.left = '21px';
+                statusEl.textContent = '매일 저녁 8시에 알림을 보내드려요';
+              };
+              toggleEl.onclick = async () => {
                 const currentPermission = ('Notification' in window) ? Notification.permission : 'unsupported';
                 if (currentPermission === 'granted') {
-                  // 구독이 Supabase에 살아있는지 확인
                   const uid = window._currentUser?.id;
                   const sb = window._sb;
                   let hasSub = false;
@@ -1030,17 +1037,19 @@
                     hasSub = data && data.length > 0;
                   }
                   if (!hasSub) {
-                    // 구독이 만료/삭제됨 → 새로 등록
                     await subscribePush(true);
-                    location.reload();
+                    setToggleOn();
                   } else {
                     await window.doniAlert('알림을 끄려면 브라우저 설정에서 doniapp.kr 알림을 차단해주세요.');
                   }
                 } else if (currentPermission === 'denied') {
                   await window.doniAlert('브라우저 설정에서 doniapp.kr 알림을 허용해주세요.');
                 } else {
-                  await window.requestPushPermission();
-                  location.reload();
+                  const perm = await Notification.requestPermission();
+                  if (perm === 'granted') {
+                    await subscribePush();
+                    setToggleOn();
+                  }
                 }
               };
               const saveBtn = parent.querySelector('.btn-fill');
