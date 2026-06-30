@@ -1,5 +1,6 @@
 const webpush = require('web-push');
 const { createClient } = require('@supabase/supabase-js');
+const ws = require('ws');
 
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
@@ -8,7 +9,9 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 webpush.setVapidDetails('mailto:minjicolor@gmail.com', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
-const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+  realtime: { transport: ws }
+});
 
 async function sendPushToAll() {
   const { data, error } = await sb.from('push_subscriptions').select('subscription');
