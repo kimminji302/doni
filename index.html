@@ -316,6 +316,10 @@
                 }));
                 await sb.from('plans').insert(rows);
               }
+            } else if (key === 'doni_start_month') {
+              await sb.from('monthly_settings')
+                .upsert({ user_id: uid, year: 0, month: 0, data: { start_month: value } },
+                  { onConflict: 'user_id,year,month' });
             }
           } catch(e) { console.error('Supabase sync error:', e); }
         }
@@ -357,7 +361,14 @@
             }
             if (setRes.data && setRes.data.length > 0) {
               const obj = {};
-              setRes.data.forEach(s => { obj[s.year + '-' + s.month] = s.data; });
+              setRes.data.forEach(s => {
+                if (s.year === 0 && s.month === 0) {
+                  // 사용자 환경설정 슬롯: start_month 복원
+                  if (s.data?.start_month) _origSet('doni_start_month', s.data.start_month);
+                } else {
+                  obj[s.year + '-' + s.month] = s.data;
+                }
+              });
               _origSet(SET_KEY, JSON.stringify(obj));
             }
             if (planRes.data && planRes.data.length > 0) {
