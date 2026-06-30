@@ -413,6 +413,7 @@
           const rawData = atob(base64);
           return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
         }
+        window.requestPushPermission = requestPushPermission;
 
         function showApp(user) {
           window._currentUser = user;
@@ -718,7 +719,6 @@
         } // showPopup end
       }
       window.showGraduationCert = showGraduationCert;
-      window.requestPushPermission = requestPushPermission;
 
       // 홈탭 진행바 주입 (탭 재진입/월 이동 시에도 갱신)
       function injectHomeProgress() {
