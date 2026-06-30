@@ -403,7 +403,7 @@
             const uid = window._currentUser?.id;
             const sb = window._sb;
             if (uid && sb) {
-              await sb.from('push_subscriptions').insert({ user_id: uid, subscription: JSON.stringify(sub) }).select();
+              await sb.from('push_subscriptions').insert({ user_id: uid, subscription: JSON.stringify(sub) }).select().then(({ error }) => { if (error && error.code !== '23505') console.log('push save error', error); });
             }
           } catch(e) { console.log('push subscribe failed', e); }
         }
