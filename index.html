@@ -424,7 +424,7 @@
           btn.style.opacity = '0.7';
           const { error } = await sb.auth.signInWithOAuth({
             provider: 'google',
-            options: { redirectTo: 'https://doniapp.kr', queryParams: { prompt: 'select_account' } }
+            options: { redirectTo: 'https://doniapp.kr' }
           });
           if (error) {
             const errEl = document.getElementById('auth-error');
