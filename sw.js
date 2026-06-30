@@ -1,10 +1,12 @@
-const CACHE_VERSION = 'doni-v4';
+const CACHE_VERSION = 'doni-v5';
 const STATIC_ASSETS = [
   '/doni.gif',
   '/doni_profile.gif',
   '/favicon.png',
   '/google_logo.jpg',
   '/home.png',
+  '/icon-512.png',
+  '/badge.png',
   '/manifest.json',
 ];
 
@@ -31,7 +33,7 @@ self.addEventListener('push', e => {
     self.registration.showNotification(data.title || '돈이', {
       body: data.body || '오늘 소비 기록 했어요?',
       icon: '/icon-512.png',
-      badge: '/favicon.png',
+      badge: '/badge.png',
       data: { url: '/' }
     })
   );
