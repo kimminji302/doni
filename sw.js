@@ -25,7 +25,8 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('push', e => {
-  const data = e.data?.json() || {};
+  let data = {};
+  try { data = e.data?.json() || {}; } catch(_) { data = { title: '돈이 🪙', body: e.data?.text() || '' }; }
   e.waitUntil(
     self.registration.showNotification(data.title || '돈이 🪙', {
       body: data.body || '오늘 소비 기록했어요? 🌿',
