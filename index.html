@@ -1028,29 +1028,17 @@
               };
               toggleEl.onclick = async () => {
                 const currentPermission = ('Notification' in window) ? Notification.permission : 'unsupported';
-                if (currentPermission === 'granted') {
-                  const uid = window._currentUser?.id;
-                  const sb = window._sb;
-                  let hasSub = false;
-                  if (uid && sb) {
-                    const { data } = await sb.from('push_subscriptions').select('id').eq('user_id', uid).limit(1);
-                    hasSub = data && data.length > 0;
-                  }
-                  if (!hasSub) {
-                    await subscribePush(true);
-                    setToggleOn();
-                  } else {
-                    await window.doniAlert('알림을 끄려면 브라우저 설정에서 doniapp.kr 알림을 차단해주세요.');
-                  }
-                } else if (currentPermission === 'denied') {
+                if (currentPermission === 'denied') {
                   await window.doniAlert('브라우저 설정에서 doniapp.kr 알림을 허용해주세요.');
-                } else {
-                  const perm = await Notification.requestPermission();
-                  if (perm === 'granted') {
-                    await subscribePush();
-                    setToggleOn();
-                  }
+                  return;
                 }
+                if (currentPermission === 'default') {
+                  const perm = await Notification.requestPermission();
+                  if (perm !== 'granted') return;
+                }
+                // granted이거나 방금 허용한 경우: 항상 새로 구독 등록
+                await subscribePush(true);
+                setToggleOn();
               };
               const saveBtn = parent.querySelector('.btn-fill');
               if (saveBtn) saveBtn.parentElement.before(notifRow);
