@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'doni-v3';
+const CACHE_VERSION = 'doni-v4';
 const STATIC_ASSETS = [
   '/doni.gif',
   '/doni_profile.gif',
