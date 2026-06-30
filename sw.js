@@ -30,7 +30,7 @@ self.addEventListener('push', e => {
   e.waitUntil(
     self.registration.showNotification(data.title || '돈이', {
       body: data.body || '오늘 소비 기록 했어요?',
-      icon: '/home.png',
+      icon: '/icon-512.png',
       badge: '/favicon.png',
       data: { url: '/' }
     })
