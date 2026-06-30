@@ -393,16 +393,17 @@
         async function subscribePush() {
           try {
             const reg = await navigator.serviceWorker.ready;
-            const existing = await reg.pushManager.getSubscription();
-            if (existing) return;
-            const sub = await reg.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-            });
+            let sub = await reg.pushManager.getSubscription();
+            if (!sub) {
+              sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+              });
+            }
             const uid = window._currentUser?.id;
             const sb = window._sb;
             if (uid && sb) {
-              await sb.from('push_subscriptions').insert({ user_id: uid, subscription: JSON.stringify(sub) });
+              await sb.from('push_subscriptions').insert({ user_id: uid, subscription: JSON.stringify(sub) }).select();
             }
           } catch(e) { console.log('push subscribe failed', e); }
         }
