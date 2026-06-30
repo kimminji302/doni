@@ -402,7 +402,7 @@
             const uid = window._currentUser?.id;
             const sb = window._sb;
             if (uid && sb) {
-              await sb.from('push_subscriptions').upsert({ user_id: uid, subscription: JSON.stringify(sub) });
+              await sb.from('push_subscriptions').insert({ user_id: uid, subscription: JSON.stringify(sub) });
             }
           } catch(e) { console.log('push subscribe failed', e); }
         }
