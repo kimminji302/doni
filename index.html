@@ -1037,6 +1037,13 @@
                 }
               })();
               toggleEl.onclick = async () => {
+                // iOS Safari 브라우저 탭에서는 PWA 설치 필요
+                const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+                const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+                if (isIOS && !isStandalone) {
+                  await window.doniAlert('아이폰에서 알림을 받으려면\nSafari 하단 공유 버튼 → "홈 화면에 추가" 로 앱을 설치한 후 사용해주세요.');
+                  return;
+                }
                 const currentPermission = ('Notification' in window) ? Notification.permission : 'unsupported';
                 if (currentPermission === 'denied') {
                   await window.doniAlert('브라우저 설정에서 doniapp.kr 알림을 허용해주세요.');
