@@ -1328,23 +1328,17 @@
         }
 
         function findMsgContainer() {
-          const chatPage = document.querySelector('.chat-page');
-          if (!chatPage) return null;
-          // 스크롤 가능한 메시지 컨테이너 탐색
-          const divs = chatPage.querySelectorAll('div');
-          for (const d of divs) {
-            const cs = window.getComputedStyle(d);
-            if ((cs.overflowY === 'auto' || cs.overflowY === 'scroll') && d.scrollHeight > 100) return d;
-          }
-          return chatPage;
+          // 실제 Vue 클래스명: .chat-room (overflow-y:auto 스크롤 컨테이너)
+          return document.querySelector('.chat-room') || document.querySelector('.chat-screen');
         }
 
         function injectUserBubble(text) {
           const container = findMsgContainer();
           if (!container) return;
           const wrap = document.createElement('div');
-          wrap.className = 'doni-user-bubble-wrap';
-          wrap.innerHTML = `<div class="doni-user-bubble">${text.replace(/</g,'&lt;')}</div>`;
+          // 기존 Vue 말풍선 클래스에 맞춤
+          wrap.className = 'msg-row me';
+          wrap.innerHTML = `<div class="bubble me-bubble">${text.replace(/</g,'&lt;')}</div>`;
           container.appendChild(wrap);
           container.scrollTop = container.scrollHeight;
         }
@@ -1361,10 +1355,11 @@
           const summary = [parsed.item, costStr, dateLabel].filter(Boolean).join(' · ');
 
           const wrap = document.createElement('div');
-          wrap.className = 'doni-bot-bubble-wrap';
+          // 기존 Vue 돈이 말풍선 클래스에 맞춤
+          wrap.className = 'msg-row doni';
           wrap.innerHTML = `
             <img src="/doni_profile.gif" class="doni-bot-avatar" alt="돈이">
-            <div class="doni-bot-bubble">
+            <div class="bubble doni-bubble">
               <div style="margin-bottom:8px;">${summary ? `<strong>${summary}</strong><br>` : ''}감정은 어땠어요?</div>
               <div class="doni-tag-chips">
                 <button class="doni-tag-chip" data-tag="growth">성장</button>
@@ -1404,9 +1399,9 @@
           container.scrollTop = container.scrollHeight;
         }
 
-        // chat-page 유무로 입력바 표시/숨김
+        // .chat-screen 유무로 입력바 표시/숨김 (실제 Vue 클래스명)
         _nlObserver = new MutationObserver(() => {
-          const onChat = !!document.querySelector('.chat-page');
+          const onChat = !!document.querySelector('.chat-screen');
           bar.style.display = onChat ? 'flex' : 'none';
         });
         _nlObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
