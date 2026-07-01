@@ -1449,29 +1449,43 @@
       function injectNLButton() {
         initNLModal();
         if (_nlObserver) return;
-        let _lastInput = null;
-        _nlObserver = new MutationObserver(() => {
-          // 하단 "오늘은 어떤 일이 있었나요?" 입력바에 클릭 핸들러 연결
-          const chatInput = document.querySelector('.chat-input-wrap input, .chat-input input, .chat-footer input');
-          if (!chatInput || chatInput === _lastInput) return;
-          _lastInput = chatInput;
-          chatInput.addEventListener('focus', e => {
-            e.preventDefault();
-            chatInput.blur();
-            window._openNLInput && window._openNLInput();
+
+        // document 캡처 단계에서 하단 입력바 클릭/포커스 가로채기
+        // Vue 핸들러보다 먼저 실행되어 기록 남기기 폼 대신 NL 모달 열림
+        let _captureAttached = false;
+        function attachCapture() {
+          if (_captureAttached) return;
+          // 하단 입력바 input 존재 여부로 캡처 필요 여부 판단
+          const inp = document.querySelector('input[placeholder*="어떤"], input[placeholder*="오늘"], .chat-page input');
+          if (!inp) return;
+          _captureAttached = true;
+
+          document.addEventListener('click', e => {
+            // 썼어요 탭(chat-page)에 있는 input 클릭인지 확인
+            const chatPage = document.querySelector('.chat-page');
+            if (!chatPage) return;
+            const target = e.target;
+            const isInputArea = target.tagName === 'INPUT' && chatPage.contains(target);
+            const isInputWrap = !isInputArea && chatPage.contains(target) &&
+              (target.closest('[class*="input"]') || target.closest('[class*="bottom"]') || target.closest('[class*="footer"]'));
+            if (isInputArea || isInputWrap) {
+              e.stopImmediatePropagation();
+              e.preventDefault();
+              setTimeout(() => window._openNLInput && window._openNLInput(), 0);
+            }
           }, { capture: true });
-          // 입력바 감싸는 영역 클릭도 처리
-          const wrap = chatInput.closest('[class*="input"], [class*="footer"], [class*="bottom"]');
-          if (wrap && !wrap._nlBound) {
-            wrap._nlBound = true;
-            wrap.addEventListener('click', e => {
-              if (e.target === chatInput || wrap.contains(e.target)) {
-                e.stopPropagation();
-                window._openNLInput && window._openNLInput();
-              }
-            }, { capture: true });
-          }
-        });
+
+          document.addEventListener('focusin', e => {
+            const chatPage = document.querySelector('.chat-page');
+            if (!chatPage || !chatPage.contains(e.target)) return;
+            if (e.target.tagName === 'INPUT') {
+              e.target.blur();
+              setTimeout(() => window._openNLInput && window._openNLInput(), 0);
+            }
+          }, { capture: true });
+        }
+
+        _nlObserver = new MutationObserver(attachCapture);
         _nlObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
 
