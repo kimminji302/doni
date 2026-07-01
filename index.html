@@ -1279,6 +1279,20 @@
         const words = itemText.split(' ').filter(w => w.length >= 2 && w !== '원');
         result.item = words.slice(0, 2).join(' ');
 
+        // 카테고리 키워드 매핑
+        const catMap = {
+          '식사': ['카페','커피','밥','식당','음식','먹','치킨','피자','버거','떡볶이','라면','초밥','빵','과자','아이스크림','술','맥주','배달','음료','케이크','도넛','쌀','국밥','김밥','편의점'],
+          '문화': ['책','영화','공연','전시','게임','음악','콘서트','넷플릭스','유튜브','웹툰','도서'],
+          '교통': ['버스','지하철','택시','주유','주차','기차','ktx','비행기','킥보드','환승'],
+          '쇼핑': ['옷','신발','가방','화장품','향수','액세서리','전자','폰','케이스','청바지','티셔츠'],
+          '의료': ['병원','약','약국','치과','한의원','영양제','비타민'],
+          '생활': ['마트','세탁','청소','가구','공과금','문구','연필','볼펜','노트','다이어리']
+        };
+        result.category = '';
+        for (const [cat, kws] of Object.entries(catMap)) {
+          if (kws.some(k => text.includes(k))) { result.category = cat; break; }
+        }
+
         return result;
       }
 
@@ -1362,16 +1376,18 @@
             const diff = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(t.getFullYear(), t.getMonth(), t.getDate())) / 86400000);
             return diff === 0 ? '오늘' : diff === 1 ? '어제' : diff === 2 ? '그저께' : parsed.fullDate;
           })();
-          const itemCost = [parsed.item, costStr].filter(Boolean).join(' ');
-          const summary = itemCost
-            ? `${itemCost}${dateLabel !== '오늘' ? ` (${dateLabel})` : ''}이에요`
-            : (dateLabel !== '오늘' ? `${dateLabel} 소비` : '');
+          const dateNote = dateLabel !== '오늘' ? ` (${dateLabel})` : '';
+          const summary = parsed.item && costStr
+            ? `${parsed.item}에 ${costStr} 썼네요${dateNote}!`
+            : costStr
+            ? `${costStr} 썼네요${dateNote}!`
+            : dateNote ? `${dateNote.trim()} 소비네요!` : '';
 
           const wrap = document.createElement('div');
           wrap.className = 'doni-bot-bubble-wrap';
           wrap.innerHTML = `
             <div class="doni-bot-bubble">
-              <div style="margin-bottom:8px;">${summary ? `<strong>${summary}</strong><br>` : ''}감정은 어땠어요?</div>
+              <div style="margin-bottom:8px;">${summary ? `${summary}<br>` : ''}기분이 어땠어요?</div>
               <div class="doni-tag-chips">
                 <button class="doni-tag-chip" data-tag="growth">성장</button>
                 <button class="doni-tag-chip" data-tag="joy">행복</button>
@@ -1397,13 +1413,12 @@
               id: Date.now().toString(),
               year: dateObj.getFullYear(), month: dateObj.getMonth() + 1,
               fullDate: parsed.fullDate || new Date().toISOString().slice(0,10),
-              time: '', item: parsed.item || rawText,
+              time: '', item: parsed.item || '',
               cost: parsed.cost || 0, tag: selectedTag || '',
-              customHash: '', category: ''
+              customHash: '', category: parsed.category || ''
             };
-            const viaStore = saveExpense(expense);
-            wrap.querySelector('.doni-bot-bubble').innerHTML = '저장됐어요! 기록해줘서 고마워요 :)';
-            if (!viaStore) setTimeout(() => location.reload(), 900);
+            saveExpense(expense);
+            wrap.querySelector('.doni-bot-bubble').innerHTML = '기록됐어요! 오늘도 잘 하고 있어요 :)';
           };
 
           container.appendChild(wrap);
@@ -1412,14 +1427,23 @@
 
         // .chat-screen 유무로 입력바 표시/숨김, 탭바 높이 동적 측정으로 위치 결정
         function updateBarPos() {
-          const nav = document.querySelector('.bottom-nav');
-          bar.style.bottom = (nav ? nav.offsetHeight : 72) + 'px';
+          // .fake-input 위치 기준으로 내 바 위치 계산 (getBoundingClientRect)
+          const fi = document.querySelector('.fake-input');
+          if (fi) {
+            const parent = fi.closest('.input-bar') || fi.parentElement;
+            const rect = parent.getBoundingClientRect();
+            bar.style.bottom = Math.max(0, window.innerHeight - rect.bottom) + 'px';
+          } else {
+            const nav = document.querySelector('.bottom-nav');
+            bar.style.bottom = (nav ? nav.offsetHeight : 72) + 'px';
+          }
         }
         _nlObserver = new MutationObserver(() => {
           const onChat = !!document.querySelector('.chat-screen');
           if (onChat) { updateBarPos(); bar.style.display = 'flex'; }
           else { bar.style.display = 'none'; }
-          // Vue input-bar는 건드리지 않음 — 내 바가 z-index:500으로 시각적으로 덮음
+          // .plus-btn, .fake-input만 숨기기 — .input-bar 전체 건드리면 탭바 아이콘 깨짐
+          document.querySelectorAll('.plus-btn, .fake-input').forEach(el => { el.style.display = 'none'; });
         });
         _nlObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
