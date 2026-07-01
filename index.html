@@ -228,8 +228,8 @@
     /* 내 말풍선 (오른쪽) */
     .doni-user-bubble-wrap { display:flex;justify-content:flex-end;padding:4px 16px;margin:2px 0; }
     .doni-user-bubble { background:var(--ink);color:var(--bg);border-radius:18px 18px 4px 18px;padding:10px 14px;font-size:14px;max-width:72%;line-height:1.5;word-break:break-all; }
-    /* 돈이 말풍선 (왼쪽) */
-    .doni-bot-bubble-wrap { display:flex;align-items:flex-end;gap:8px;padding:4px 16px;margin:2px 0; }
+    /* 돈이 말풍선 (왼쪽) — Vue 기존 chat bubble과 정렬 일치 */
+    .doni-bot-bubble-wrap { display:flex;align-items:flex-start;padding:4px 16px;margin:2px 0; }
     .doni-bot-avatar { width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;align-self:flex-start; }
     .doni-bot-bubble { background:var(--white);border:1px solid var(--line);border-radius:4px 18px 18px 18px;padding:12px 14px;font-size:14px;max-width:78%;line-height:1.6; }
     .doni-tag-chips { display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 8px; }
@@ -1303,7 +1303,6 @@
         try {
           const app = document.getElementById('app').__vue_app__;
           if (app) {
-            // Pinia 2는 로컬 Symbol('pinia')를 사용 — Symbol.for()와 다름
             const provides = app._context.provides;
             let pinia = provides[Symbol.for('pinia')] || null;
             if (!pinia) {
@@ -1313,37 +1312,44 @@
             }
             if (!pinia && window.__pinia) pinia = window.__pinia;
             if (pinia) {
+              // 디버그: store 구조 파악용 (console에서 확인)
+              for (const [sid, store] of pinia._s.entries()) {
+                const fns = Object.keys(store).filter(k => typeof store[k] === 'function' && !k.startsWith('$') && !k.startsWith('_'));
+                const stateKeys = Object.keys(store.$state || {});
+                console.log('[doni] store id:', sid, '| fns:', fns.join(','), '| state keys:', stateKeys.join(','));
+              }
               for (const store of pinia._s.values()) {
                 if (typeof store.addExpense === 'function') {
-                  store.addExpense(expense);
-                  return true;
+                  store.addExpense(expense); return true;
                 }
-                // store.$state 내 배열 중 cost 필드 가진 항목이 있는 배열에 직접 push
+                // cost 필드가 있는 배열 찾아 push (state key 무관)
                 const state = store.$state;
                 if (state) {
                   for (const key of Object.keys(state)) {
                     const arr = state[key];
-                    if (Array.isArray(arr) && (arr.length === 0 || arr[0]?.cost !== undefined || arr[0]?.id !== undefined)) {
-                      arr.push(expense);
-                      return true;
+                    if (Array.isArray(arr) && arr.length > 0 && arr[0]?.cost !== undefined) {
+                      arr.push(expense); return true;
                     }
                   }
                 }
               }
             }
           }
-        } catch(e) {}
+        } catch(e) { console.log('[doni] saveExpense error:', e); }
         try {
           const exps = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
           exps.push(expense);
           localStorage.setItem('doni_exp_v3', JSON.stringify(exps));
+          console.log('[doni] localStorage fallback used — store not updated reactively');
           // Pinia 실패 시 Vue store가 localStorage를 재읽도록 유도
           try {
             const app = document.getElementById('app').__vue_app__;
             if (app) {
               const provides = app._context.provides;
               let pinia2 = null;
-              for (const key of Object.getOwnPropertySymbols(provides)) { pinia2 = provides[key]; break; }
+              for (const key of Object.getOwnPropertySymbols(provides)) {
+                if (String(key) === 'Symbol(pinia)') { pinia2 = provides[key]; break; }
+              }
               if (pinia2) {
                 for (const store of pinia2._s.values()) {
                   if (typeof store.loadExpenses === 'function') store.loadExpenses();
