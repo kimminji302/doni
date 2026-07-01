@@ -1267,11 +1267,13 @@
         // 항목 추출 (금액/날짜/감정어/조사 제거 후 첫 명사구)
         let itemText = text
           .replace(/그저께|그제|어제|오늘/, '')
-          .replace(/[\d,]+\s*원/, '')
           .replace(/\d+(?:\.\d+)?\s*만\s*원?/, '')
+          .replace(/\d+\s*천\s*원?/, '')
+          .replace(/[\d,]+\s*원/, '')
           .replace(/만\s*원/, '')
           .replace(joyWords, '').replace(growthWords, '').replace(livingWords, '').replace(wasteWords, '')
-          .replace(/에서|에게|한테|부터|까지|으로|로|을|를|은|는|서|도|만|씀|샀|먹었|했어|했다|ㅠ|ㅜ|~|!|\?/g, ' ')
+          .replace(/기분|감정|느낌|썼는데|썼어|좋았어|좋았다|좋아/g, ' ')
+          .replace(/에서|에게|에|한테|부터|까지|으로|로|을|를|은|는|서|도|만|씀|샀|먹었|했어|했다|ㅠ|ㅜ|~|!|\?/g, ' ')
           .replace(/\s+/g, ' ').trim();
         // 첫 단어(들) 추출 (한 글자 단어 및 "원" 단독 제거)
         const words = itemText.split(' ').filter(w => w.length >= 2 && w !== '원');
@@ -1360,7 +1362,10 @@
             const diff = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(t.getFullYear(), t.getMonth(), t.getDate())) / 86400000);
             return diff === 0 ? '오늘' : diff === 1 ? '어제' : diff === 2 ? '그저께' : parsed.fullDate;
           })();
-          const summary = [parsed.item, costStr, dateLabel].filter(Boolean).join(' · ');
+          const itemCost = [parsed.item, costStr].filter(Boolean).join(' ');
+          const summary = itemCost
+            ? `${itemCost}${dateLabel !== '오늘' ? ` (${dateLabel})` : ''}이에요`
+            : (dateLabel !== '오늘' ? `${dateLabel} 소비` : '');
 
           const wrap = document.createElement('div');
           wrap.className = 'doni-bot-bubble-wrap';
@@ -1414,8 +1419,7 @@
           const onChat = !!document.querySelector('.chat-screen');
           if (onChat) { updateBarPos(); bar.style.display = 'flex'; }
           else { bar.style.display = 'none'; }
-          // input-bar는 레이아웃 유지, 클릭만 막기 (display:none하면 탭바 아이콘 레이아웃 깨짐)
-          document.querySelectorAll('.input-bar').forEach(el => { el.style.pointerEvents = 'none'; el.style.opacity = '0'; });
+          // Vue input-bar는 건드리지 않음 — 내 바가 z-index:500으로 시각적으로 덮음
         });
         _nlObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
