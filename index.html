@@ -241,9 +241,7 @@
     .doni-nl-confirm-btns button { flex:1;padding:14px;border-radius:14px;font-size:14px;font-family:'Gowun Batang',serif;cursor:pointer;font-weight:700; }
     #doni-nl-back-btn { background:transparent;border:1.5px solid var(--line);color:var(--sub); }
     #doni-nl-save-btn { background:var(--ink);border:none;color:var(--bg); }
-    /* 빠른입력 버튼 (썼어요 탭) */
-    #doni-nl-quick-btn { position:fixed;bottom:90px;left:20px;height:52px;padding:0 18px;background:var(--white);color:var(--ink);border:1.5px solid var(--line);border-radius:26px;font-size:13px;font-weight:700;font-family:'Gowun Batang',serif;cursor:pointer;box-shadow:0 4px 16px rgba(44,44,44,0.12);display:flex;align-items:center;gap:6px;z-index:50;transition:all .2s; }
-    [data-theme="dark"] #doni-nl-quick-btn { background:rgba(255,255,255,0.1); }
+    /* 하단 입력바 탭 시 NL 모달 — 별도 버튼 없음 */
   </style>
   <script>
     (function() {
@@ -1451,21 +1449,28 @@
       function injectNLButton() {
         initNLModal();
         if (_nlObserver) return;
-        let _lastChatPage = null;
+        let _lastInput = null;
         _nlObserver = new MutationObserver(() => {
-          const chatPage = document.querySelector('.chat-page, .chat-header')?.closest('.chat-page') ||
-                           document.querySelector('.chat-header')?.parentElement;
-          const existing = document.getElementById('doni-nl-quick-btn');
-          if (!chatPage) {
-            if (existing) existing.style.display = 'none';
-            return;
+          // 하단 "오늘은 어떤 일이 있었나요?" 입력바에 클릭 핸들러 연결
+          const chatInput = document.querySelector('.chat-input-wrap input, .chat-input input, .chat-footer input');
+          if (!chatInput || chatInput === _lastInput) return;
+          _lastInput = chatInput;
+          chatInput.addEventListener('focus', e => {
+            e.preventDefault();
+            chatInput.blur();
+            window._openNLInput && window._openNLInput();
+          }, { capture: true });
+          // 입력바 감싸는 영역 클릭도 처리
+          const wrap = chatInput.closest('[class*="input"], [class*="footer"], [class*="bottom"]');
+          if (wrap && !wrap._nlBound) {
+            wrap._nlBound = true;
+            wrap.addEventListener('click', e => {
+              if (e.target === chatInput || wrap.contains(e.target)) {
+                e.stopPropagation();
+                window._openNLInput && window._openNLInput();
+              }
+            }, { capture: true });
           }
-          if (existing) { existing.style.display = 'flex'; return; }
-          const btn = document.createElement('button');
-          btn.id = 'doni-nl-quick-btn';
-          btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg> 빠른 입력';
-          btn.onclick = () => window._openNLInput && window._openNLInput();
-          document.body.appendChild(btn);
         });
         _nlObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
