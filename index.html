@@ -221,7 +221,7 @@
     .doni-modal-btn-confirm { background:var(--ink);color:var(--bg); }
     .doni-modal-btn-ok { background:var(--ink);color:var(--bg); }
     /* 채팅형 자연어 입력 */
-    #doni-nl-bar { position:fixed;bottom:0;left:0;right:0;z-index:500;display:none;align-items:center;gap:8px;padding:8px 12px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 8px);background:var(--bg);border-top:1px solid var(--line);font-family:'Gowun Batang',serif; }
+    #doni-nl-bar { position:fixed;bottom:72px;left:0;right:0;z-index:500;display:none;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border-top:1px solid var(--line);font-family:'Gowun Batang',serif; }
     #doni-nl-input { flex:1;border:1.5px solid var(--line);border-radius:22px;padding:10px 16px;font-size:15px;font-family:'Gowun Batang',serif;background:var(--white);color:var(--ink);outline:none;min-height:40px;max-height:100px;resize:none;line-height:1.4; }
     #doni-nl-send { width:38px;height:38px;border-radius:50%;background:var(--ink);border:none;cursor:pointer;display:none;align-items:center;justify-content:center;flex-shrink:0; }
     #doni-nl-send svg { stroke:#F9F7F2; }
@@ -1210,12 +1210,13 @@
         // 날짜 파싱
         const now = new Date();
         const y = now.getFullYear(), mo = now.getMonth(), d = now.getDate();
+        const _ld = dt => { const p = n => String(n).padStart(2,'0'); return `${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())}`; };
         if (/그저께|그제/.test(text)) {
-          result.fullDate = new Date(y, mo, d - 2).toISOString().slice(0, 10);
+          result.fullDate = _ld(new Date(y, mo, d - 2));
         } else if (/어제/.test(text)) {
-          result.fullDate = new Date(y, mo, d - 1).toISOString().slice(0, 10);
+          result.fullDate = _ld(new Date(y, mo, d - 1));
         } else {
-          result.fullDate = new Date(y, mo, d).toISOString().slice(0, 10);
+          result.fullDate = _ld(new Date(y, mo, d));
         }
 
         // 금액 파싱 (순서 중요: 복합 표현 먼저)
@@ -1265,7 +1266,7 @@
           .replace(/\d+(?:\.\d+)?\s*만\s*원?/, '')
           .replace(/만\s*원/, '')
           .replace(joyWords, '').replace(growthWords, '').replace(livingWords, '').replace(wasteWords, '')
-          .replace(/에서|에게|한테|부터|까지|으로|로|을|를|이|가|은|는|서|도|만|씀|샀|먹었|했어|했다|ㅠ|ㅜ|~|!|\?/g, ' ')
+          .replace(/에서|에게|한테|부터|까지|으로|로|을|를|은|는|서|도|만|씀|샀|먹었|했어|했다|ㅠ|ㅜ|~|!|\?/g, ' ')
           .replace(/\s+/g, ' ').trim();
         // 첫 단어(들) 추출 (한 글자 단어 및 "원" 단독 제거)
         const words = itemText.split(' ').filter(w => w.length >= 2 && w !== '원');
@@ -1359,7 +1360,6 @@
           const wrap = document.createElement('div');
           wrap.className = 'doni-bot-bubble-wrap';
           wrap.innerHTML = `
-            <img src="/doni_profile.gif" class="doni-bot-avatar" alt="돈이">
             <div class="doni-bot-bubble">
               <div style="margin-bottom:8px;">${summary ? `<strong>${summary}</strong><br>` : ''}감정은 어땠어요?</div>
               <div class="doni-tag-chips">
