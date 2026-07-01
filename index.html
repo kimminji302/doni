@@ -498,9 +498,11 @@
       }
 
       // 설정탭 "이달의 약속" 페이지에 로그아웃 버튼 주입 (탭 재진입 시에도 재주입)
+      let _logoutObserver = null;
       function injectLogoutButton() {
+        if (_logoutObserver) return;
         let lastParent = null;
-        const observer = new MutationObserver(() => {
+        _logoutObserver = new MutationObserver(() => {
           const titles = document.querySelectorAll('.page-title');
           titles.forEach(el => {
             if (el.textContent.includes('이달의 약속')) {
@@ -518,7 +520,7 @@
             }
           });
         });
-        observer.observe(document.getElementById('app'), { childList: true, subtree: true });
+        _logoutObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
 
       // ── 점수 데이터 헬퍼 ──────────────────────────────────────────
@@ -794,11 +796,14 @@
 
         // Vue 렌더 완료 후 즉시 시도 (requestAnimationFrame으로 첫 렌더 지연 방지)
         requestAnimationFrame(tryRenderProgress);
-        // 이후 DOM 변화 감지 (탭 이동, 월 변경)
-        const observer = new MutationObserver(tryRenderProgress);
-        observer.observe(document.getElementById('app'), { childList: true, subtree: true });
+        // 이후 DOM 변화 감지 (탭 이동, 월 변경) — 전역으로 관리해 중복 생성 방지
+        if (!window._progressObserver) {
+          window._progressObserver = new MutationObserver(tryRenderProgress);
+          window._progressObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
+        }
       }
 
+      let _chatObserver = null;
       function injectChatHeader() {
         let _lastLabel = null;
         function tryRender() {
@@ -825,13 +830,18 @@
           header.appendChild(span);
         }
         tryRender();
-        new MutationObserver(tryRender).observe(document.getElementById('app'), { childList:true, subtree:true });
+        if (!_chatObserver) {
+          _chatObserver = new MutationObserver(tryRender);
+          _chatObserver.observe(document.getElementById('app'), { childList:true, subtree:true });
+        }
       }
 
       // 설정탭에 동기화/초기화 버튼 주입 (탭 재진입 시에도 재주입)
+      let _settingObserver = null;
       function injectSettingButtons() {
+        if (_settingObserver) return;
         let lastParent = null;
-        const observer = new MutationObserver(() => {
+        _settingObserver = new MutationObserver(() => {
           const titles = document.querySelectorAll('.page-title');
           let found = false;
           titles.forEach(el => {
@@ -891,16 +901,16 @@
                   <span style="font-size:12px;color:var(--sub);">${score.streak}/6</span>
                 </div>`;
 
-              // 콤마 포맷 이벤트
+              // 콤마 포맷 이벤트 (oninput으로 설정 — addEventListener는 탭 재진입 시 중복 누적됨)
               const goalInput = goalWrap.querySelector('#doni-goal-amount-input');
-              goalInput.addEventListener('input', () => {
+              goalInput.oninput = () => {
                 const raw = goalInput.value.replace(/[^0-9]/g, '');
                 const cursor = goalInput.selectionStart;
                 const prevLen = goalInput.value.length;
                 goalInput.value = raw ? parseInt(raw, 10).toLocaleString('ko-KR') : '';
                 const diff = goalInput.value.length - prevLen;
                 goalInput.setSelectionRange(cursor + diff, cursor + diff);
-              });
+              };
 
               // 저장 로직
               goalWrap.querySelector('#doni-goal-amount-save').onclick = () => {
@@ -1038,13 +1048,13 @@
                 toggleKnob.style.left = '3px';
                 statusEl.textContent = '알림이 꺼져있어요';
               };
-              // 현재 구독 상태 반영
+              // 현재 구독 상태 반영 (async 완료 전 탭 이동 시 DOM 없을 수 있으므로 체크)
               (async () => {
                 const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
                 if (perm === 'granted' && 'serviceWorker' in navigator) {
                   const reg = await navigator.serviceWorker.ready.catch(() => null);
                   const sub = reg ? await reg.pushManager.getSubscription().catch(() => null) : null;
-                  if (sub) setToggleOn();
+                  if (sub && document.getElementById('doni-notif-toggle')) setToggleOn();
                 }
               })();
               toggleEl.onclick = async () => {
@@ -1117,7 +1127,7 @@
                   const uid = window._currentUser?.id;
                   if (!uid) { await window.doniAlert('로그인이 필요해요.'); return; }
                   const ok = await window.doniConfirm('이 기기의 기록과 서버의 기록을 합칩니다.\n계속할까요?');
-                  if (!ok) return;
+                  if (!ok) { syncSaveBtn.textContent = '기록 저장'; syncSaveBtn.disabled = false; return; }
                   syncSaveBtn.textContent = '저장 중...';
                   syncSaveBtn.disabled = true;
                   try {
@@ -1165,7 +1175,7 @@
             }
           });
         });
-        observer.observe(document.getElementById('app'), { childList: true, subtree: true });
+        _settingObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
 
       // 커스텀 모달 (TWA에서 alert/confirm 대체)
