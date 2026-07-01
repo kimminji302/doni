@@ -1304,11 +1304,18 @@
         if (window._doniStore && typeof window._doniStore.addExpense === 'function') {
           try {
             window._doniStore.addExpense(expense);
-            console.log('[doni] ✓ addExpense 성공', expense.item, expense.cost);
+            console.error('[doni] ✓ addExpense 호출됨 len=', window._doniStore.expenses.length);
+            // push()가 컴포넌트 re-render를 트리거하지 못하는 경우 대비:
+            // localStorage에서 최신 데이터를 읽어 splice로 전체 교체 → Vue가 무조건 감지
+            try {
+              const fresh = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
+              window._doniStore.expenses.splice(0, window._doniStore.expenses.length, ...fresh);
+              console.error('[doni] ✓ splice 완료 len=', window._doniStore.expenses.length);
+            } catch(e2) { console.error('[doni] splice 실패', e2); }
             return true;
           } catch(e) { console.error('[doni] addExpense 실패', e); }
         } else {
-          console.warn('[doni] _doniStore 미설정 — 반응형 업데이트 불가');
+          console.error('[doni] _doniStore 미설정');
         }
         return false;
       }
@@ -1408,6 +1415,7 @@
               fullDate: parsed.fullDate || new Date().toISOString().slice(0,10),
               item: parsed.item || '',
               cost: parsed.cost || 0, tag: selectedTag || '',
+              category: parsed.category || '',
               customHash: ''
             };
             saveExpense(expense);
