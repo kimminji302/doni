@@ -1238,6 +1238,11 @@
           if (/\b만\s*원/.test(text)) cost = 10000;
         }
         if (cost === null) {
+          // "2천원", "3천원" 등 숫자+천+원
+          m = text.match(/(\d+)\s*천\s*원?/);
+          if (m) cost = parseInt(m[1], 10) * 1000;
+        }
+        if (cost === null) {
           // 숫자+원 (콤마 포함)
           m = text.match(/([\d,]+)\s*원/);
           if (m) cost = parseInt(m[1].replace(/,/g, ''), 10);
@@ -1409,8 +1414,8 @@
           const onChat = !!document.querySelector('.chat-screen');
           if (onChat) { updateBarPos(); bar.style.display = 'flex'; }
           else { bar.style.display = 'none'; }
-          // Vue 원래 input-bar 전체 숨기기 (+ 버튼 포함, bottom-nav와 별개)
-          document.querySelectorAll('.input-bar').forEach(el => { el.style.display = 'none'; });
+          // input-bar는 레이아웃 유지, 클릭만 막기 (display:none하면 탭바 아이콘 레이아웃 깨짐)
+          document.querySelectorAll('.input-bar').forEach(el => { el.style.pointerEvents = 'none'; el.style.opacity = '0'; });
         });
         _nlObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
