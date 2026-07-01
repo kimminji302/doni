@@ -1303,7 +1303,13 @@
       function saveExpense(expense) {
         // window._doniStore는 minified 코드의 reactive 스토어($)를 직접 노출한 참조
         if (window._doniStore && typeof window._doniStore.addExpense === 'function') {
-          try { window._doniStore.addExpense(expense); return true; } catch(e) {}
+          try {
+            window._doniStore.addExpense(expense);
+            console.log('[doni] ✓ addExpense 성공', expense.item, expense.cost);
+            return true;
+          } catch(e) { console.error('[doni] addExpense 실패', e); }
+        } else {
+          console.warn('[doni] _doniStore 미설정 — 반응형 업데이트 불가');
         }
         return false;
       }
@@ -1349,8 +1355,9 @@
           const container = findMsgContainer();
           if (!container) return;
           const wrap = document.createElement('div');
-          wrap.className = 'doni-user-bubble-wrap';
-          wrap.innerHTML = `<div class="doni-user-bubble">${text.replace(/</g,'&lt;')}</div>`;
+          wrap.className = 'msg-row me fade-up';
+          wrap.setAttribute('data-v-907a7368', '');
+          wrap.innerHTML = `<div class="bubble me-bubble" data-v-907a7368>${text.replace(/</g,'&lt;')}</div>`;
           container.appendChild(wrap);
           container.scrollTop = container.scrollHeight;
         }
@@ -1372,9 +1379,10 @@
             : dateNote ? `${dateNote.trim()} 소비네!` : '';
 
           const wrap = document.createElement('div');
-          wrap.className = 'doni-bot-bubble-wrap';
+          wrap.className = 'msg-row doni fade-up';
+          wrap.setAttribute('data-v-907a7368', '');
           wrap.innerHTML = `
-            <div class="doni-bot-bubble">
+            <div class="bubble doni-bubble doni-bot-interactive" data-v-907a7368>
               <div style="margin-bottom:8px;">${summary ? `${summary}<br>` : ''}기분이 어땠어?</div>
               <div class="doni-tag-chips">
                 <button class="doni-tag-chip" data-tag="growth">성장</button>
@@ -1406,8 +1414,8 @@
               customHash: ''
             };
             saveExpense(expense);
-            wrap.querySelector('.doni-bot-bubble').innerHTML = '';
-            wrap.querySelector('.doni-bot-bubble').style.display = 'none';
+            wrap.querySelector('.doni-bot-interactive').innerHTML = '';
+            wrap.querySelector('.doni-bot-interactive').style.display = 'none';
             doniAlert('기록됐어!\n오늘도 잘 하고 있어 :)').then(() => {
               injectEncouragement(selectedTag, parsed.category);
             });
@@ -1430,8 +1438,9 @@
           const container = findMsgContainer();
           if (!container) return;
           const w = document.createElement('div');
-          w.className = 'doni-bot-bubble-wrap';
-          w.innerHTML = `<div class="doni-bot-bubble">${msg.replace(/\n/g,'<br>')}</div>`;
+          w.className = 'msg-row doni fade-up';
+          w.setAttribute('data-v-907a7368', '');
+          w.innerHTML = `<div class="bubble doni-bubble" data-v-907a7368>${msg.replace(/\n/g,'<br>')}</div>`;
           container.appendChild(w);
           container.scrollTop = container.scrollHeight;
         }
