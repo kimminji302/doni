@@ -1276,7 +1276,7 @@
           .replace(/에서|에게|에|한테|부터|까지|으로|로|을|를|은|는|서|도|만|씀|샀|먹었|했어|했다|ㅠ|ㅜ|~|!|\?/g, ' ')
           .replace(/\s+/g, ' ').trim();
         // 첫 단어(들) 추출 (한 글자 단어 및 "원" 단독 제거)
-        const words = itemText.split(' ').filter(w => w.length >= 2 && w !== '원');
+        const words = itemText.split(' ').filter(w => w.length >= 1 && !/^[에서은는이가을를에게로도만]$/.test(w) && w !== '원');
         result.item = words.slice(0, 2).join(' ');
 
         // 카테고리 키워드 매핑
@@ -1301,7 +1301,14 @@
         try {
           const app = document.getElementById('app').__vue_app__;
           if (app) {
-            const pinia = app._context.provides[Symbol.for('pinia')];
+            // Pinia 2는 로컬 Symbol('pinia')를 사용 — Symbol.for()와 다름
+            const provides = app._context.provides;
+            let pinia = provides[Symbol.for('pinia')] || null;
+            if (!pinia) {
+              for (const key of Object.getOwnPropertySymbols(provides)) {
+                if (String(key) === 'Symbol(pinia)') { pinia = provides[key]; break; }
+              }
+            }
             if (pinia) {
               for (const store of pinia._s.values()) {
                 if (typeof store.addExpense === 'function') {
@@ -1378,23 +1385,23 @@
           })();
           const dateNote = dateLabel !== '오늘' ? ` (${dateLabel})` : '';
           const summary = parsed.item && costStr
-            ? `${parsed.item}에 ${costStr} 썼네요${dateNote}!`
+            ? `${parsed.item}에 ${costStr} 썼네${dateNote}!`
             : costStr
-            ? `${costStr} 썼네요${dateNote}!`
-            : dateNote ? `${dateNote.trim()} 소비네요!` : '';
+            ? `${costStr} 썼네${dateNote}!`
+            : dateNote ? `${dateNote.trim()} 소비네!` : '';
 
           const wrap = document.createElement('div');
           wrap.className = 'doni-bot-bubble-wrap';
           wrap.innerHTML = `
             <div class="doni-bot-bubble">
-              <div style="margin-bottom:8px;">${summary ? `${summary}<br>` : ''}기분이 어땠어요?</div>
+              <div style="margin-bottom:8px;">${summary ? `${summary}<br>` : ''}기분이 어땠어?</div>
               <div class="doni-tag-chips">
                 <button class="doni-tag-chip" data-tag="growth">성장</button>
                 <button class="doni-tag-chip" data-tag="joy">행복</button>
                 <button class="doni-tag-chip" data-tag="living">생활</button>
                 <button class="doni-tag-chip" data-tag="waste">방황</button>
               </div>
-              <button class="doni-save-chip">저장하기</button>
+              <button class="doni-save-chip">저장할게!</button>
             </div>`;
 
           let selectedTag = parsed.tag || null;
@@ -1418,10 +1425,33 @@
               customHash: '', category: parsed.category || ''
             };
             saveExpense(expense);
-            wrap.querySelector('.doni-bot-bubble').innerHTML = '기록됐어요! 오늘도 잘 하고 있어요 :)';
+            wrap.querySelector('.doni-bot-bubble').innerHTML = '';
+            wrap.querySelector('.doni-bot-bubble').style.display = 'none';
+            doniAlert('기록됐어!\n오늘도 잘 하고 있어 :)').then(() => {
+              injectEncouragement(selectedTag, parsed.category);
+            });
           };
 
           container.appendChild(wrap);
+          container.scrollTop = container.scrollHeight;
+        }
+
+        function injectEncouragement(tag, category) {
+          const pool = {
+            joy:     ['미래의 네가 고마워할거야!\n먹는 즐거움도 충분히 가치있어 :)', '행복한 소비잖아, 그걸로 충분해!'],
+            growth:  ['미래의 네가 고마워할거야!\n성장하는 소비잖아 :)', '잘하고 있어. 투자한 거 꼭 돌아올 거야!'],
+            living:  ['살면서 필요한 거 쓴 거잖아, 잘했어!', '미래의 네가 고마워할거야.\n생활을 챙기는 거 중요해 :)'],
+            waste:   ['괜찮아, 가끔은 충동도 필요해.\n다음엔 더 잘할 수 있어!', '오늘 하루 수고했어. 이것도 다 경험이야 :)'],
+            default: ['기록해줘서 고마워!\n이게 쌓이면 진짜 달라질 거야.', '미래의 네가 고마워할거야 :)']
+          };
+          const msgs = pool[tag] || pool.default;
+          const msg = msgs[Math.floor(Date.now() / 1000) % msgs.length];
+          const container = findMsgContainer();
+          if (!container) return;
+          const w = document.createElement('div');
+          w.className = 'doni-bot-bubble-wrap';
+          w.innerHTML = `<div class="doni-bot-bubble">${msg.replace(/\n/g,'<br>')}</div>`;
+          container.appendChild(w);
           container.scrollTop = container.scrollHeight;
         }
 
