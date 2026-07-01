@@ -220,6 +220,8 @@
     .doni-modal-btn-cancel { background:transparent;color:var(--sub);border:1px solid var(--line); }
     .doni-modal-btn-confirm { background:var(--ink);color:var(--bg); }
     .doni-modal-btn-ok { background:var(--ink);color:var(--bg); }
+    /* Vue 네이티브 입력 요소 영구 숨김 — re-render 시에도 유지 */
+    .fake-input, .plus-btn { display: none !important; }
     /* 채팅형 자연어 입력 */
     #doni-nl-bar { position:fixed;bottom:72px;left:0;right:0;z-index:500;display:none;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border-top:1px solid var(--line);font-family:'Gowun Batang',serif; }
     #doni-nl-input { flex:1;border:1.5px solid var(--line);border-radius:22px;padding:10px 16px;font-size:15px;font-family:'Gowun Batang',serif;background:var(--white);color:var(--ink);outline:none;min-height:40px;max-height:100px;resize:none;line-height:1.4; }
@@ -1304,18 +1306,12 @@
         if (window._doniStore && typeof window._doniStore.addExpense === 'function') {
           try {
             window._doniStore.addExpense(expense);
-            console.error('[doni] ✓ addExpense 호출됨 len=', window._doniStore.expenses.length);
-            // push()가 컴포넌트 re-render를 트리거하지 못하는 경우 대비:
-            // localStorage에서 최신 데이터를 읽어 splice로 전체 교체 → Vue가 무조건 감지
-            try {
-              const fresh = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
-              window._doniStore.expenses.splice(0, window._doniStore.expenses.length, ...fresh);
-              console.error('[doni] ✓ splice 완료 len=', window._doniStore.expenses.length);
-            } catch(e2) { console.error('[doni] splice 실패', e2); }
+            // splice()는 같은 배열 참조를 유지해 computed dirty 처리가 안 될 수 있음
+            // 프로퍼티 자체를 새 배열로 교체 → Vue Proxy set trap 확실히 발동
+            const fresh = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
+            window._doniStore.expenses = fresh;
             return true;
-          } catch(e) { console.error('[doni] addExpense 실패', e); }
-        } else {
-          console.error('[doni] _doniStore 미설정');
+          } catch(e) {}
         }
         return false;
       }
