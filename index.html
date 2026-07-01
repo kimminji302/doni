@@ -1400,12 +1400,17 @@
           container.scrollTop = container.scrollHeight;
         }
 
-        // .chat-screen 유무로 입력바 표시/숨김, Vue 원래 입력바 숨김
+        // .chat-screen 유무로 입력바 표시/숨김, 탭바 높이 동적 측정으로 위치 결정
+        function updateBarPos() {
+          const nav = document.querySelector('.bottom-nav');
+          bar.style.bottom = (nav ? nav.offsetHeight : 72) + 'px';
+        }
         _nlObserver = new MutationObserver(() => {
           const onChat = !!document.querySelector('.chat-screen');
-          bar.style.display = onChat ? 'flex' : 'none';
-          // Vue 원래 하단 입력 영역 숨기기
-          document.querySelectorAll('.input-bar').forEach(el => { el.style.display = 'none'; });
+          if (onChat) { updateBarPos(); bar.style.display = 'flex'; }
+          else { bar.style.display = 'none'; }
+          // Vue 원래 fake-input만 숨기기 (bottom-nav는 건드리지 않음)
+          document.querySelectorAll('.fake-input').forEach(el => { el.style.visibility = 'hidden'; });
         });
         _nlObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
