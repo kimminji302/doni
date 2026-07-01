@@ -1256,10 +1256,11 @@
 
         // 감정 태그 힌트 파싱
         const joyWords = /행복|기쁘|즐거|좋았|설레|신나|뿌듯|만족|happy/i;
-        const growthWords = /성장|배움|공부|투자|자기계발|책|강의|발전/i;
+        const growthTag = /성장|배움|공부|투자|자기계발|책|강의|발전|학원|수업|강좌|인강|수강/i;
+        const growthEmotion = /자기계발|성장했|발전했|배웠/i;
         const livingWords = /생활|필요|생필품|마트|식료품|일상|당연|그냥/i;
         const wasteWords = /방황|충동|후회|아까|낭비|쓸데|실수|허무|괜히/i;
-        if (growthWords.test(text)) result.tag = 'growth';
+        if (growthTag.test(text)) result.tag = 'growth';
         else if (joyWords.test(text)) result.tag = 'joy';
         else if (livingWords.test(text)) result.tag = 'living';
         else if (wasteWords.test(text)) result.tag = 'waste';
@@ -1271,7 +1272,7 @@
           .replace(/\d+\s*천\s*원?/, '')
           .replace(/[\d,]+\s*원/, '')
           .replace(/만\s*원/, '')
-          .replace(joyWords, '').replace(growthWords, '').replace(livingWords, '').replace(wasteWords, '')
+          .replace(joyWords, '').replace(growthEmotion, '').replace(livingWords, '').replace(wasteWords, '')
           .replace(/기분|감정|느낌|썼는데|썼어|좋았어|좋았다|좋아/g, ' ')
           .replace(/에서|에게|에|한테|부터|까지|으로|로|을|를|은|는|서|도|만|씀|샀|먹었|했어|했다|ㅠ|ㅜ|~|!|\?/g, ' ')
           .replace(/\s+/g, ' ').trim();
@@ -1281,6 +1282,7 @@
 
         // 카테고리 키워드 매핑
         const catMap = {
+          '교육': ['강의','교육','강좌','수업','학원','과외','튜터','인강','수강'],
           '식사': ['카페','커피','밥','식당','음식','먹','치킨','피자','버거','떡볶이','라면','초밥','빵','과자','아이스크림','술','맥주','배달','음료','케이크','도넛','쌀','국밥','김밥','편의점'],
           '문화': ['책','영화','공연','전시','게임','음악','콘서트','넷플릭스','유튜브','웹툰','도서'],
           '교통': ['버스','지하철','택시','주유','주차','기차','ktx','비행기','킥보드','환승'],
@@ -1309,10 +1311,15 @@
                 if (String(key) === 'Symbol(pinia)') { pinia = provides[key]; break; }
               }
             }
+            if (!pinia && window.__pinia) pinia = window.__pinia;
             if (pinia) {
               for (const store of pinia._s.values()) {
                 if (typeof store.addExpense === 'function') {
                   store.addExpense(expense);
+                  return true;
+                }
+                if (store.$state && Array.isArray(store.$state.curExpenses)) {
+                  store.$state.curExpenses.push(expense);
                   return true;
                 }
               }
@@ -1457,7 +1464,6 @@
 
         // .chat-screen 유무로 입력바 표시/숨김, 탭바 높이 동적 측정으로 위치 결정
         function updateBarPos() {
-          // .fake-input 위치 기준으로 내 바 위치 계산 (getBoundingClientRect)
           const fi = document.querySelector('.fake-input');
           if (fi) {
             const parent = fi.closest('.input-bar') || fi.parentElement;
@@ -1467,6 +1473,9 @@
             const nav = document.querySelector('.bottom-nav');
             bar.style.bottom = (nav ? nav.offsetHeight : 72) + 'px';
           }
+          // 채팅창이 입력바에 가려지지 않도록 padding-bottom 설정
+          const chatRoom = document.querySelector('.chat-room');
+          if (chatRoom) chatRoom.style.paddingBottom = (bar.offsetHeight + 12) + 'px';
         }
         _nlObserver = new MutationObserver(() => {
           const onChat = !!document.querySelector('.chat-screen');
