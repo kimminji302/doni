@@ -231,7 +231,7 @@
     /* 돈이 말풍선 (왼쪽) — Vue 기존 chat bubble과 정렬 일치 */
     .doni-bot-bubble-wrap { display:flex;align-items:flex-start;padding:4px 16px;margin:2px 0; }
     .doni-bot-avatar { width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;align-self:flex-start; }
-    .doni-bot-bubble { background:var(--white);border:1px solid var(--line);border-radius:4px 18px 18px 18px;padding:12px 14px;font-size:14px;max-width:78%;line-height:1.6; }
+    .doni-bot-bubble { background:var(--white);border:1px solid var(--line);border-radius:4px 18px 18px 18px;padding:10px 14px;font-size:14px;max-width:70%;line-height:1.6; }
     .doni-tag-chips { display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 8px; }
     .doni-tag-chip { padding:6px 12px;border:1.5px solid var(--line);border-radius:20px;background:transparent;color:var(--sub);font-size:12px;font-family:'Gowun Batang',serif;cursor:pointer;transition:all .15s; }
     .doni-tag-chip.selected { border-color:var(--ink);background:var(--ink);color:var(--bg);font-weight:700; }
@@ -1301,34 +1301,38 @@
       }
 
       function saveExpense(expense) {
-        // Vue 컴포넌트 트리에서 expense store 직접 탐색
+        // Pinia 인스턴스: Symbol description이 minified에서 변경되므로 구조로 판별
         try {
-          const candidates = ['.chat-screen', '.chat-room', '#app'];
-          for (const sel of candidates) {
-            let el = document.querySelector(sel);
-            let comp = el?.__vueParentComponent || el?.__vue_app__?._instance;
-            while (comp) {
-              const state = comp.setupState || {};
-              for (const key of Object.keys(state)) {
-                const val = state[key];
-                if (!val || typeof val !== 'object') continue;
-                if (typeof val.addExpense === 'function') {
-                  val.addExpense(expense); console.log('[doni] store.addExpense 성공'); return true;
+          const app = document.getElementById('app').__vue_app__;
+          if (app) {
+            const provides = app._context.provides;
+            let pinia = null;
+            // Symbol 이름 대신 _s(Map) + install(fn) 구조로 Pinia 판별
+            for (const key of Object.getOwnPropertySymbols(provides)) {
+              const val = provides[key];
+              if (val && val._s instanceof Map && typeof val.install === 'function') {
+                pinia = val; break;
+              }
+            }
+            if (!pinia && window.__pinia) pinia = window.__pinia;
+            if (pinia) {
+              for (const store of pinia._s.values()) {
+                if (typeof store.addExpense === 'function') {
+                  store.addExpense(expense); return true;
                 }
-                const s = val.$state;
-                if (s) {
-                  for (const k of Object.keys(s)) {
-                    const arr = s[k];
+                const state = store.$state;
+                if (state) {
+                  for (const k of Object.keys(state)) {
+                    const arr = state[k];
                     if (Array.isArray(arr) && arr.length > 0 && arr[0]?.cost !== undefined) {
-                      arr.push(expense); console.log('[doni] $state 직접 push 성공:', k); return true;
+                      arr.push(expense); return true;
                     }
                   }
                 }
               }
-              comp = comp.parent;
             }
           }
-        } catch(e) { console.log('[doni] store 탐색 오류:', e); }
+        } catch(e) {}
         try {
           const exps = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
           exps.push(expense);
@@ -1498,7 +1502,11 @@
           }
           // 채팅창이 입력바에 가려지지 않도록 padding-bottom 설정
           const chatRoom = document.querySelector('.chat-room');
-          if (chatRoom) chatRoom.style.paddingBottom = (bar.offsetHeight + 12) + 'px';
+          if (chatRoom) {
+            const setPad = () => { chatRoom.style.paddingBottom = ((bar.offsetHeight || 60) + 16) + 'px'; };
+            setPad();
+            requestAnimationFrame(setPad);
+          }
         }
         _nlObserver = new MutationObserver(() => {
           const onChat = !!document.querySelector('.chat-screen');
