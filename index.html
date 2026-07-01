@@ -1299,43 +1299,34 @@
       }
 
       function saveExpense(expense) {
-        // Pinia 스토어 직접 접근 시도 → 실패 시 localStorage fallback
+        // Vue 컴포넌트 트리에서 expense store 직접 탐색
         try {
-          const app = document.getElementById('app').__vue_app__;
-          if (app) {
-            const provides = app._context.provides;
-            let pinia = provides[Symbol.for('pinia')] || null;
-            if (!pinia) {
-              for (const key of Object.getOwnPropertySymbols(provides)) {
-                if (String(key) === 'Symbol(pinia)') { pinia = provides[key]; break; }
-              }
-            }
-            if (!pinia && window.__pinia) pinia = window.__pinia;
-            if (pinia) {
-              // 디버그: store 구조 파악용 (console에서 확인)
-              for (const [sid, store] of pinia._s.entries()) {
-                const fns = Object.keys(store).filter(k => typeof store[k] === 'function' && !k.startsWith('$') && !k.startsWith('_'));
-                const stateKeys = Object.keys(store.$state || {});
-                console.log('[doni] store id:', sid, '| fns:', fns.join(','), '| state keys:', stateKeys.join(','));
-              }
-              for (const store of pinia._s.values()) {
-                if (typeof store.addExpense === 'function') {
-                  store.addExpense(expense); return true;
+          const candidates = ['.chat-screen', '.chat-room', '#app'];
+          for (const sel of candidates) {
+            let el = document.querySelector(sel);
+            let comp = el?.__vueParentComponent || el?.__vue_app__?._instance;
+            while (comp) {
+              const state = comp.setupState || {};
+              for (const key of Object.keys(state)) {
+                const val = state[key];
+                if (!val || typeof val !== 'object') continue;
+                if (typeof val.addExpense === 'function') {
+                  val.addExpense(expense); console.log('[doni] store.addExpense 성공'); return true;
                 }
-                // cost 필드가 있는 배열 찾아 push (state key 무관)
-                const state = store.$state;
-                if (state) {
-                  for (const key of Object.keys(state)) {
-                    const arr = state[key];
+                const s = val.$state;
+                if (s) {
+                  for (const k of Object.keys(s)) {
+                    const arr = s[k];
                     if (Array.isArray(arr) && arr.length > 0 && arr[0]?.cost !== undefined) {
-                      arr.push(expense); return true;
+                      arr.push(expense); console.log('[doni] $state 직접 push 성공:', k); return true;
                     }
                   }
                 }
               }
+              comp = comp.parent;
             }
           }
-        } catch(e) { console.log('[doni] saveExpense error:', e); }
+        } catch(e) { console.log('[doni] store 탐색 오류:', e); }
         try {
           const exps = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
           exps.push(expense);
@@ -1454,12 +1445,12 @@
           wrap.querySelector('.doni-save-chip').onclick = () => {
             const dateObj = new Date(parsed.fullDate || new Date().toISOString().slice(0,10));
             const expense = {
-              id: Date.now().toString(),
+              id: crypto.randomUUID(),
               year: dateObj.getFullYear(), month: dateObj.getMonth() + 1,
               fullDate: parsed.fullDate || new Date().toISOString().slice(0,10),
-              time: '', item: parsed.item || '',
+              item: parsed.item || '',
               cost: parsed.cost || 0, tag: selectedTag || '',
-              customHash: '', category: parsed.category || ''
+              customHash: ''
             };
             saveExpense(expense);
             wrap.querySelector('.doni-bot-bubble').innerHTML = '';
