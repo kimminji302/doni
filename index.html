@@ -1450,42 +1450,44 @@
         initNLModal();
         if (_nlObserver) return;
 
-        // document 캡처 단계에서 하단 입력바 클릭/포커스 가로채기
-        // Vue 핸들러보다 먼저 실행되어 기록 남기기 폼 대신 NL 모달 열림
-        let _captureAttached = false;
-        function attachCapture() {
-          if (_captureAttached) return;
-          // 하단 입력바 input 존재 여부로 캡처 필요 여부 판단
-          const inp = document.querySelector('input[placeholder*="어떤"], input[placeholder*="오늘"], .chat-page input');
-          if (!inp) return;
-          _captureAttached = true;
-
-          document.addEventListener('click', e => {
-            // 썼어요 탭(chat-page)에 있는 input 클릭인지 확인
-            const chatPage = document.querySelector('.chat-page');
-            if (!chatPage) return;
-            const target = e.target;
-            const isInputArea = target.tagName === 'INPUT' && chatPage.contains(target);
-            const isInputWrap = !isInputArea && chatPage.contains(target) &&
-              (target.closest('[class*="input"]') || target.closest('[class*="bottom"]') || target.closest('[class*="footer"]'));
-            if (isInputArea || isInputWrap) {
-              e.stopImmediatePropagation();
-              e.preventDefault();
-              setTimeout(() => window._openNLInput && window._openNLInput(), 0);
+        let _intercepting = false;
+        _nlObserver = new MutationObserver(() => {
+          if (_intercepting) return;
+          // Vue의 "기록 남기기" 바텀시트가 DOM에 나타나면 즉시 숨기고 NL 모달 열기
+          const allEls = document.querySelectorAll('[class*="modal"], [class*="bottom"], [class*="sheet"], [class*="drawer"], [class*="popup"]');
+          allEls.forEach(el => {
+            if (el._nlChecked) return;
+            el._nlChecked = true;
+            if (el.textContent.includes('기록 남기기') && el.offsetHeight > 100) {
+              _intercepting = true;
+              // Vue 모달 숨기기
+              const orig = el.style.cssText;
+              el.style.display = 'none';
+              // 배경 딤 레이어도 숨기기
+              document.querySelectorAll('[class*="overlay"], [class*="dim"], [class*="mask"]').forEach(d => {
+                if (d !== document.getElementById('doni-nl-backdrop') && d !== document.getElementById('doni-modal-backdrop')) {
+                  d._nlOrigDisplay = d.style.display;
+                  d.style.display = 'none';
+                }
+              });
+              window._openNLInput && window._openNLInput();
+              // NL 모달 닫힐 때 Vue 모달도 완전히 제거 (재사용 방지)
+              const nlBackdrop = document.getElementById('doni-nl-backdrop');
+              const cleanup = new MutationObserver(() => {
+                if (nlBackdrop.style.display === 'none') {
+                  el.style.cssText = orig;
+                  el.style.display = 'none'; // Vue 모달은 계속 숨김
+                  document.querySelectorAll('[class*="overlay"], [class*="dim"], [class*="mask"]').forEach(d => {
+                    if (d._nlOrigDisplay !== undefined) d.style.display = d._nlOrigDisplay;
+                  });
+                  cleanup.disconnect();
+                  setTimeout(() => { _intercepting = false; }, 300);
+                }
+              });
+              cleanup.observe(nlBackdrop, { attributes: true, attributeFilter: ['style'] });
             }
-          }, { capture: true });
-
-          document.addEventListener('focusin', e => {
-            const chatPage = document.querySelector('.chat-page');
-            if (!chatPage || !chatPage.contains(e.target)) return;
-            if (e.target.tagName === 'INPUT') {
-              e.target.blur();
-              setTimeout(() => window._openNLInput && window._openNLInput(), 0);
-            }
-          }, { capture: true });
-        }
-
-        _nlObserver = new MutationObserver(attachCapture);
+          });
+        });
         _nlObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
 
