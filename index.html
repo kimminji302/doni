@@ -1318,9 +1318,16 @@
                   store.addExpense(expense);
                   return true;
                 }
-                if (store.$state && Array.isArray(store.$state.curExpenses)) {
-                  store.$state.curExpenses.push(expense);
-                  return true;
+                // store.$state 내 배열 중 cost 필드 가진 항목이 있는 배열에 직접 push
+                const state = store.$state;
+                if (state) {
+                  for (const key of Object.keys(state)) {
+                    const arr = state[key];
+                    if (Array.isArray(arr) && (arr.length === 0 || arr[0]?.cost !== undefined || arr[0]?.id !== undefined)) {
+                      arr.push(expense);
+                      return true;
+                    }
+                  }
                 }
               }
             }
@@ -1330,6 +1337,23 @@
           const exps = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
           exps.push(expense);
           localStorage.setItem('doni_exp_v3', JSON.stringify(exps));
+          // Pinia 실패 시 Vue store가 localStorage를 재읽도록 유도
+          try {
+            const app = document.getElementById('app').__vue_app__;
+            if (app) {
+              const provides = app._context.provides;
+              let pinia2 = null;
+              for (const key of Object.getOwnPropertySymbols(provides)) { pinia2 = provides[key]; break; }
+              if (pinia2) {
+                for (const store of pinia2._s.values()) {
+                  if (typeof store.loadExpenses === 'function') store.loadExpenses();
+                  else if (typeof store.fetchExpenses === 'function') store.fetchExpenses();
+                  else if (typeof store.init === 'function') store.init();
+                  else if (typeof store.$reset === 'function') { store.$reset(); }
+                }
+              }
+            }
+          } catch(e2) {}
         } catch(e) {}
         return false;
       }
@@ -1485,6 +1509,9 @@
           document.querySelectorAll('.plus-btn, .fake-input').forEach(el => { el.style.display = 'none'; });
         });
         _nlObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
+        // 이미 chat-screen이 있을 때도 즉시 적용 (첫 진입 시 mutation 없음)
+        if (document.querySelector('.chat-screen')) { updateBarPos(); bar.style.display = 'flex'; }
+        document.querySelectorAll('.plus-btn, .fake-input').forEach(el => { el.style.display = 'none'; });
       }
 
       // 커스텀 모달 (TWA에서 alert/confirm 대체)
