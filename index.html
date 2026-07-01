@@ -220,6 +220,30 @@
     .doni-modal-btn-cancel { background:transparent;color:var(--sub);border:1px solid var(--line); }
     .doni-modal-btn-confirm { background:var(--ink);color:var(--bg); }
     .doni-modal-btn-ok { background:var(--ink);color:var(--bg); }
+    /* 자연어 입력 모달 */
+    #doni-nl-backdrop { position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;font-family:'Gowun Batang',serif;overflow:hidden; }
+    #doni-nl-header { display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0; }
+    #doni-nl-header span { font-size:16px;font-weight:700;color:var(--ink); }
+    #doni-nl-close { background:none;border:none;font-size:22px;cursor:pointer;color:var(--sub);padding:4px 8px;line-height:1; }
+    #doni-nl-textarea { width:100%;box-sizing:border-box;border:none;border-bottom:1.5px solid var(--line);background:transparent;color:var(--ink);font-size:17px;font-family:'Gowun Batang',serif;padding:20px 20px 12px;resize:none;outline:none;min-height:90px; }
+    #doni-nl-hint { font-size:12px;color:var(--sub);padding:8px 20px 0;line-height:1.7; }
+    #doni-nl-parse-btn { margin:20px 20px 0;width:calc(100% - 40px);padding:14px;border:none;background:var(--ink);color:var(--bg);border-radius:14px;font-size:15px;font-weight:700;font-family:'Gowun Batang',serif;cursor:pointer; }
+    /* 확인 화면 */
+    #doni-nl-confirm { display:none;flex:1;flex-direction:column;padding:20px;overflow-y:auto; }
+    .doni-nl-field { margin-bottom:16px; }
+    .doni-nl-field-label { font-size:11px;color:var(--sub);margin-bottom:5px; }
+    .doni-nl-field-val { font-size:16px;font-weight:700;color:var(--ink);padding:11px 14px;background:var(--white);border-radius:12px;border:1.5px solid var(--line); }
+    .doni-nl-field-val input { width:100%;border:none;background:transparent;color:var(--ink);font-size:16px;font-family:'Gowun Batang',serif;outline:none;font-weight:700; }
+    .doni-nl-tag-row { display:flex;gap:8px;flex-wrap:wrap; }
+    .doni-nl-tag-btn { flex:1;min-width:60px;padding:10px 6px;border:1.5px solid var(--line);border-radius:12px;background:transparent;color:var(--sub);font-size:13px;font-family:'Gowun Batang',serif;cursor:pointer;text-align:center;transition:all .15s; }
+    .doni-nl-tag-btn.selected { border-color:var(--ink);background:var(--ink);color:var(--bg);font-weight:700; }
+    .doni-nl-confirm-btns { display:flex;gap:8px;margin-top:auto;padding-top:20px; }
+    .doni-nl-confirm-btns button { flex:1;padding:14px;border-radius:14px;font-size:14px;font-family:'Gowun Batang',serif;cursor:pointer;font-weight:700; }
+    #doni-nl-back-btn { background:transparent;border:1.5px solid var(--line);color:var(--sub); }
+    #doni-nl-save-btn { background:var(--ink);border:none;color:var(--bg); }
+    /* 빠른입력 버튼 (썼어요 탭) */
+    #doni-nl-quick-btn { position:fixed;bottom:90px;left:20px;height:52px;padding:0 18px;background:var(--white);color:var(--ink);border:1.5px solid var(--line);border-radius:26px;font-size:13px;font-weight:700;font-family:'Gowun Batang',serif;cursor:pointer;box-shadow:0 4px 16px rgba(44,44,44,0.12);display:flex;align-items:center;gap:6px;z-index:50;transition:all .2s; }
+    [data-theme="dark"] #doni-nl-quick-btn { background:rgba(255,255,255,0.1); }
   </style>
   <script>
     (function() {
@@ -234,6 +258,53 @@
     <div id="doni-modal-box">
       <p id="doni-modal-msg"></p>
       <div id="doni-modal-btns" style="display:flex;gap:8px;"></div>
+    </div>
+  </div>
+  <!-- 자연어 지출 입력 모달 -->
+  <div id="doni-nl-backdrop" style="display:none;">
+    <!-- Step 1: 텍스트 입력 -->
+    <div id="doni-nl-step1" style="display:flex;flex-direction:column;width:100%;height:100%;">
+      <div id="doni-nl-header">
+        <span>빠른 입력</span>
+        <button id="doni-nl-close">✕</button>
+      </div>
+      <textarea id="doni-nl-textarea" placeholder="오늘 떡볶이 12,000원 행복했어&#10;어제 편의점에서 만원 씀&#10;배달의민족 1.2만 방황했어" rows="4"></textarea>
+      <div id="doni-nl-hint">금액·항목·날짜·감정을 자유롭게 적어보세요</div>
+      <button id="doni-nl-parse-btn">확인 →</button>
+    </div>
+    <!-- Step 2: 결과 확인 -->
+    <div id="doni-nl-confirm" style="display:none;flex-direction:column;height:100%;">
+      <div id="doni-nl-header" style="flex-shrink:0;">
+        <span>이렇게 기록할까요?</span>
+        <button id="doni-nl-close2">✕</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:20px;">
+        <div class="doni-nl-field">
+          <div class="doni-nl-field-label">항목</div>
+          <div class="doni-nl-field-val"><input id="doni-nl-item" type="text" placeholder="항목을 입력하세요"></div>
+        </div>
+        <div class="doni-nl-field">
+          <div class="doni-nl-field-label">금액 (원)</div>
+          <div class="doni-nl-field-val"><input id="doni-nl-cost" type="number" inputmode="numeric" placeholder="금액"></div>
+        </div>
+        <div class="doni-nl-field">
+          <div class="doni-nl-field-label">날짜</div>
+          <div class="doni-nl-field-val"><input id="doni-nl-date" type="date"></div>
+        </div>
+        <div class="doni-nl-field">
+          <div class="doni-nl-field-label">감정은 어땠어요?</div>
+          <div class="doni-nl-tag-row">
+            <button class="doni-nl-tag-btn" data-tag="growth">성장</button>
+            <button class="doni-nl-tag-btn" data-tag="joy">행복</button>
+            <button class="doni-nl-tag-btn" data-tag="living">생활</button>
+            <button class="doni-nl-tag-btn" data-tag="waste">방황</button>
+          </div>
+        </div>
+        <div class="doni-nl-confirm-btns">
+          <button id="doni-nl-back-btn">← 다시 입력</button>
+          <button id="doni-nl-save-btn">저장하기</button>
+        </div>
+      </div>
     </div>
   </div>
   <div id="auth-overlay" style="display:flex;position:fixed;inset:0;z-index:9999;background:#F9F7F2;flex-direction:column;align-items:center;justify-content:center;font-family:'Gowun Batang',serif;">
@@ -447,6 +518,7 @@
               injectSettingButtons();
               injectHomeProgress();
               injectChatHeader();
+              injectNLButton();
               checkMonthlyResult();
               requestPushPermission();
             }
@@ -1176,6 +1248,226 @@
           });
         });
         _settingObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
+      }
+
+      // ── 자연어 지출 입력 ─────────────────────────────────────────────
+
+      function parseExpenseText(text) {
+        const result = { item: '', cost: null, tag: null, fullDate: null };
+
+        // 날짜 파싱
+        const now = new Date();
+        const y = now.getFullYear(), mo = now.getMonth(), d = now.getDate();
+        if (/그저께|그제/.test(text)) {
+          result.fullDate = new Date(y, mo, d - 2).toISOString().slice(0, 10);
+        } else if (/어제/.test(text)) {
+          result.fullDate = new Date(y, mo, d - 1).toISOString().slice(0, 10);
+        } else {
+          result.fullDate = new Date(y, mo, d).toISOString().slice(0, 10);
+        }
+
+        // 금액 파싱 (순서 중요: 복합 표현 먼저)
+        let cost = null;
+        // "1.2만", "2.5만" 같은 소수점 만 단위
+        let m = text.match(/(\d+(?:\.\d+)?)\s*만\s*원?/);
+        if (m) { cost = Math.round(parseFloat(m[1]) * 10000); }
+        if (cost === null) {
+          // "만이천원", "만오천원" 같은 한글 복합
+          const kanjiMap = { '일': 1, '이': 2, '삼': 3, '사': 4, '오': 5, '육': 6, '칠': 7, '팔': 8, '구': 9 };
+          const kanjiMatch = text.match(/만\s*([일이삼사오육칠팔구])?\s*천\s*원?/);
+          if (kanjiMatch) {
+            const thousands = kanjiMatch[1] ? (kanjiMap[kanjiMatch[1]] || 1) : 0;
+            cost = 10000 + thousands * 1000;
+          }
+        }
+        if (cost === null) {
+          // "만원"
+          if (/\b만\s*원/.test(text)) cost = 10000;
+        }
+        if (cost === null) {
+          // 숫자+원 (콤마 포함)
+          m = text.match(/([\d,]+)\s*원/);
+          if (m) cost = parseInt(m[1].replace(/,/g, ''), 10);
+        }
+        if (cost === null) {
+          // 순수 숫자 (4자리 이상)
+          m = text.match(/\b(\d{4,})\b/);
+          if (m) cost = parseInt(m[1], 10);
+        }
+        if (cost !== null && !isNaN(cost)) result.cost = cost;
+
+        // 감정 태그 힌트 파싱
+        const joyWords = /행복|기쁘|즐거|좋았|설레|신나|뿌듯|만족|happy/i;
+        const growthWords = /성장|배움|공부|투자|자기계발|책|강의|발전/i;
+        const livingWords = /생활|필요|생필품|마트|식료품|일상|당연|그냥/i;
+        const wasteWords = /방황|충동|후회|아까|낭비|쓸데|실수|허무|괜히/i;
+        if (growthWords.test(text)) result.tag = 'growth';
+        else if (joyWords.test(text)) result.tag = 'joy';
+        else if (livingWords.test(text)) result.tag = 'living';
+        else if (wasteWords.test(text)) result.tag = 'waste';
+
+        // 항목 추출 (금액/날짜/감정어/조사 제거 후 첫 명사구)
+        let itemText = text
+          .replace(/그저께|그제|어제|오늘/, '')
+          .replace(/[\d,]+\s*원/, '')
+          .replace(/\d+(?:\.\d+)?\s*만\s*원?/, '')
+          .replace(/만\s*원/, '')
+          .replace(joyWords, '').replace(growthWords, '').replace(livingWords, '').replace(wasteWords, '')
+          .replace(/에서|에게|한테|부터|까지|으로|로|을|를|이|가|은|는|서|도|만|씀|샀|먹었|했어|했다|ㅠ|ㅜ|~|!|\?/g, ' ')
+          .replace(/\s+/g, ' ').trim();
+        // 첫 단어(들) 추출
+        const words = itemText.split(' ').filter(w => w.length > 0);
+        result.item = words.slice(0, 2).join(' ');
+
+        return result;
+      }
+
+      function initNLModal() {
+        const backdrop = document.getElementById('doni-nl-backdrop');
+        const step1 = document.getElementById('doni-nl-step1');
+        const step2 = document.getElementById('doni-nl-confirm');
+        const textarea = document.getElementById('doni-nl-textarea');
+        const parseBtn = document.getElementById('doni-nl-parse-btn');
+        const backBtn = document.getElementById('doni-nl-back-btn');
+        const saveBtn = document.getElementById('doni-nl-save-btn');
+        const itemInput = document.getElementById('doni-nl-item');
+        const costInput = document.getElementById('doni-nl-cost');
+        const dateInput = document.getElementById('doni-nl-date');
+        const tagBtns = document.querySelectorAll('.doni-nl-tag-btn');
+        let selectedTag = null;
+
+        function openModal() {
+          backdrop.style.display = 'flex';
+          backdrop.style.flexDirection = 'column';
+          step1.style.display = 'flex';
+          step2.style.display = 'none';
+          textarea.value = '';
+          selectedTag = null;
+          setTimeout(() => textarea.focus(), 100);
+        }
+        function closeModal() {
+          backdrop.style.display = 'none';
+          textarea.value = '';
+        }
+
+        document.getElementById('doni-nl-close').onclick = closeModal;
+        document.getElementById('doni-nl-close2').onclick = closeModal;
+        backBtn.onclick = () => { step2.style.display = 'none'; step1.style.display = 'flex'; };
+
+        // 태그 선택
+        tagBtns.forEach(btn => {
+          btn.onclick = () => {
+            tagBtns.forEach(b => b.classList.remove('selected'));
+            if (selectedTag === btn.dataset.tag) {
+              selectedTag = null; // 재클릭 시 해제
+            } else {
+              btn.classList.add('selected');
+              selectedTag = btn.dataset.tag;
+            }
+          };
+        });
+
+        // 파싱 → 확인 화면
+        parseBtn.onclick = () => {
+          const text = textarea.value.trim();
+          if (!text) return;
+          const parsed = parseExpenseText(text);
+          itemInput.value = parsed.item || '';
+          costInput.value = parsed.cost || '';
+          dateInput.value = parsed.fullDate || new Date().toISOString().slice(0, 10);
+          // 태그 초기화
+          tagBtns.forEach(b => b.classList.remove('selected'));
+          selectedTag = parsed.tag || null;
+          if (selectedTag) {
+            const preBtn = document.querySelector(`.doni-nl-tag-btn[data-tag="${selectedTag}"]`);
+            if (preBtn) preBtn.classList.add('selected');
+          }
+          step1.style.display = 'none';
+          step2.style.display = 'flex';
+        };
+
+        // 저장
+        saveBtn.onclick = async () => {
+          const item = itemInput.value.trim();
+          const cost = parseInt(costInput.value, 10);
+          const fullDate = dateInput.value;
+          if (!item) { itemInput.focus(); return; }
+          if (!fullDate) return;
+
+          const dateObj = new Date(fullDate);
+          const expense = {
+            id: Date.now().toString(),
+            year: dateObj.getFullYear(),
+            month: dateObj.getMonth() + 1,
+            fullDate,
+            time: '',
+            item,
+            cost: isNaN(cost) ? 0 : cost,
+            tag: selectedTag || '',
+            customHash: '',
+            category: ''
+          };
+
+          // Pinia 스토어에 직접 추가 시도 (Vue 반응성 유지)
+          let savedViaStore = false;
+          try {
+            const app = document.getElementById('app').__vue_app__;
+            if (app) {
+              const pinia = app._context.provides[Symbol.for('pinia')];
+              if (pinia) {
+                for (const store of pinia._s.values()) {
+                  if (typeof store.addExpense === 'function') {
+                    store.addExpense(expense);
+                    savedViaStore = true;
+                    break;
+                  }
+                }
+              }
+            }
+          } catch(e) {}
+
+          if (!savedViaStore) {
+            // fallback: localStorage 직접 쓰기 (Supabase 자동 동기화)
+            try {
+              const exps = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
+              exps.push(expense);
+              localStorage.setItem('doni_exp_v3', JSON.stringify(exps));
+            } catch(e) {}
+          }
+
+          saveBtn.textContent = '저장됐어요! ✓';
+          saveBtn.disabled = true;
+          setTimeout(() => {
+            closeModal();
+            if (!savedViaStore) location.reload();
+            else { saveBtn.textContent = '저장하기'; saveBtn.disabled = false; }
+          }, 800);
+        };
+
+        window._openNLInput = openModal;
+      }
+
+      let _nlObserver = null;
+      function injectNLButton() {
+        initNLModal();
+        if (_nlObserver) return;
+        let _lastChatPage = null;
+        _nlObserver = new MutationObserver(() => {
+          const chatPage = document.querySelector('.chat-page, .chat-header')?.closest('.chat-page') ||
+                           document.querySelector('.chat-header')?.parentElement;
+          const existing = document.getElementById('doni-nl-quick-btn');
+          if (!chatPage) {
+            if (existing) existing.style.display = 'none';
+            return;
+          }
+          if (existing) { existing.style.display = 'flex'; return; }
+          const btn = document.createElement('button');
+          btn.id = 'doni-nl-quick-btn';
+          btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg> 빠른 입력';
+          btn.onclick = () => window._openNLInput && window._openNLInput();
+          document.body.appendChild(btn);
+        });
+        _nlObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
 
       // 커스텀 모달 (TWA에서 alert/confirm 대체)
