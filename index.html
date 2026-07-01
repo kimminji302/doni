@@ -1267,8 +1267,8 @@
           .replace(joyWords, '').replace(growthWords, '').replace(livingWords, '').replace(wasteWords, '')
           .replace(/에서|에게|한테|부터|까지|으로|로|을|를|이|가|은|는|서|도|만|씀|샀|먹었|했어|했다|ㅠ|ㅜ|~|!|\?/g, ' ')
           .replace(/\s+/g, ' ').trim();
-        // 첫 단어(들) 추출
-        const words = itemText.split(' ').filter(w => w.length > 0);
+        // 첫 단어(들) 추출 (한 글자 단어 및 "원" 단독 제거)
+        const words = itemText.split(' ').filter(w => w.length >= 2 && w !== '원');
         result.item = words.slice(0, 2).join(' ');
 
         return result;
@@ -1317,14 +1317,17 @@
         });
         sendBtn.onclick = doSend;
 
+        let _sending = false;
         function doSend() {
+          if (_sending) return;
           const text = input.value.trim();
           if (!text) return;
+          _sending = true;
           input.value = '';
           input.style.height = 'auto';
           sendBtn.style.display = 'none';
           injectUserBubble(text);
-          setTimeout(() => injectDoniBubble(parseExpenseText(text), text), 350);
+          setTimeout(() => { injectDoniBubble(parseExpenseText(text), text); _sending = false; }, 350);
         }
 
         function findMsgContainer() {
@@ -1336,9 +1339,8 @@
           const container = findMsgContainer();
           if (!container) return;
           const wrap = document.createElement('div');
-          // 기존 Vue 말풍선 클래스에 맞춤
-          wrap.className = 'msg-row me';
-          wrap.innerHTML = `<div class="bubble me-bubble">${text.replace(/</g,'&lt;')}</div>`;
+          wrap.className = 'doni-user-bubble-wrap';
+          wrap.innerHTML = `<div class="doni-user-bubble">${text.replace(/</g,'&lt;')}</div>`;
           container.appendChild(wrap);
           container.scrollTop = container.scrollHeight;
         }
@@ -1355,11 +1357,10 @@
           const summary = [parsed.item, costStr, dateLabel].filter(Boolean).join(' · ');
 
           const wrap = document.createElement('div');
-          // 기존 Vue 돈이 말풍선 클래스에 맞춤
-          wrap.className = 'msg-row doni';
+          wrap.className = 'doni-bot-bubble-wrap';
           wrap.innerHTML = `
             <img src="/doni_profile.gif" class="doni-bot-avatar" alt="돈이">
-            <div class="bubble doni-bubble">
+            <div class="doni-bot-bubble">
               <div style="margin-bottom:8px;">${summary ? `<strong>${summary}</strong><br>` : ''}감정은 어땠어요?</div>
               <div class="doni-tag-chips">
                 <button class="doni-tag-chip" data-tag="growth">성장</button>
@@ -1391,7 +1392,7 @@
               customHash: '', category: ''
             };
             const viaStore = saveExpense(expense);
-            wrap.querySelector('.doni-bot-bubble').innerHTML = '저장됐어요! 기록해줘서 고마워요 🐾';
+            wrap.querySelector('.doni-bot-bubble').innerHTML = '저장됐어요! 기록해줘서 고마워요 :)';
             if (!viaStore) setTimeout(() => location.reload(), 900);
           };
 
@@ -1399,10 +1400,12 @@
           container.scrollTop = container.scrollHeight;
         }
 
-        // .chat-screen 유무로 입력바 표시/숨김 (실제 Vue 클래스명)
+        // .chat-screen 유무로 입력바 표시/숨김, Vue 원래 입력바 숨김
         _nlObserver = new MutationObserver(() => {
           const onChat = !!document.querySelector('.chat-screen');
           bar.style.display = onChat ? 'flex' : 'none';
+          // Vue 원래 하단 입력 영역 숨기기
+          document.querySelectorAll('.input-bar').forEach(el => { el.style.display = 'none'; });
         });
         _nlObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
