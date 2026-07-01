@@ -1409,8 +1409,8 @@
           const onChat = !!document.querySelector('.chat-screen');
           if (onChat) { updateBarPos(); bar.style.display = 'flex'; }
           else { bar.style.display = 'none'; }
-          // Vue 원래 fake-input만 숨기기 (bottom-nav는 건드리지 않음)
-          document.querySelectorAll('.fake-input').forEach(el => { el.style.visibility = 'hidden'; });
+          // Vue 원래 input-bar 전체 숨기기 (+ 버튼 포함, bottom-nav와 별개)
+          document.querySelectorAll('.input-bar').forEach(el => { el.style.display = 'none'; });
         });
         _nlObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
       }
