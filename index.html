@@ -309,11 +309,13 @@
               let expenses; try { expenses = JSON.parse(value || '[]'); } catch(e) { expenses = []; }
               await sb.from('expenses').delete().eq('user_id', uid);
               if (expenses.length > 0) {
-                const rows = expenses.map(e => ({
-                  id: String(e.id), user_id: uid,
-                  year: e.year, month: e.month,
+                const isUUID = s => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(s));
+              const mkUUID = () => typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&0x3|0x8)).toString(16);});
+              const rows = expenses.map(e => ({
+                  id: isUUID(e.id) ? String(e.id) : mkUUID(), user_id: uid,
+                  year: e.year || 0, month: e.month || 0,
                   full_date: e.fullDate || '', item: e.item || '',
-                  cost: e.cost || 0, tag: e.tag || '', custom_hash: e.customHash || ''
+                  cost: Number(e.cost) || 0, tag: e.tag || '', custom_hash: e.customHash || ''
                 }));
                 await sb.from('expenses').insert(rows);
               }
