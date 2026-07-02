@@ -234,6 +234,10 @@
     /* 돈이 말풍선 (왼쪽) — Vue .msg-row.doni + .doni-bubble 과 동일 */
     .doni-bot-bubble-wrap { display:flex;width:100%;justify-content:flex-start;margin:2px 0; }
     .doni-bot-bubble { background:var(--white);border:1px solid var(--line);border-radius:0 14px 14px 14px;padding:10px 14px;font-size:14px;max-width:78%;line-height:1.55;box-shadow:var(--shadow-sm); }
+    /* 예산 미설정 시 홈 잔액 숨기고 설정 유도 문구로 대체 */
+    .balance-card.doni-budget-unset .balance-amount, .balance-card.doni-budget-unset .balance-msg { display:none; }
+    .doni-budget-prompt { padding:6px 0 2px;font-size:16px;font-weight:700;color:var(--ink);line-height:1.6;cursor:pointer; }
+    .doni-budget-prompt span { display:block;margin-top:4px;font-size:12px;font-weight:400;color:var(--sub); }
     .doni-tag-chips { display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 8px; }
     .doni-tag-chip, .doni-waste-chip { padding:6px 12px;border:1.5px solid var(--line);border-radius:20px;background:transparent;color:var(--sub);font-size:12px;font-family:'Gowun Batang',serif;cursor:pointer;transition:all .15s; }
     .doni-tag-chip.selected { border-color:var(--ink);background:var(--ink);color:var(--bg);font-weight:700; }
@@ -1505,7 +1509,15 @@
             default: ['기록해줘서 고마워!\n이게 쌓이면 진짜 달라질 거야.', '미래의 네가 고마워할거야 :)']
           };
           const msgs = pool[tag] || pool.default;
-          const msg = msgs[Math.floor(Date.now() / 1000) % msgs.length];
+          let msg = msgs[Math.floor(Date.now() / 1000) % msgs.length];
+          // 누적 피드백 — 이번 달 같은 태그 소비 횟수 (방황은 축하 대신 기본 위로만)
+          const tagLabels = { growth: '성장', joy: '행복', living: '든든' };
+          if (tagLabels[tag] && window._doniStore) {
+            try {
+              const n = window._doniStore.curExpenses.filter(e => e.tag === tag).length;
+              if (n >= 2) msg = `이번 달 ${n}번째 ${tagLabels[tag]} 소비야!\n` + msg;
+            } catch(e) {}
+          }
           const container = findMsgContainer();
           if (!container) return;
           const w = document.createElement('div');
@@ -1534,17 +1546,46 @@
             requestAnimationFrame(setPad);
           }
         }
+        // 예산(수입/고정비) 미설정이면 홈 잔액 대신 설정 유도 문구 표시
+        // Vue 노드는 건드리지 않고 클래스 토글 + 별도 노드 추가로만 처리 (re-render 안전)
+        function updateHomeBudgetPrompt() {
+          const store = window._doniStore;
+          const card = document.querySelector('.balance-card');
+          if (!store || !card) return;
+          const set = store.curSet;
+          const unset = !Number(set.inc) && !Number(set.fix);
+          let prompt = card.querySelector('.doni-budget-prompt');
+          if (unset) {
+            card.classList.add('doni-budget-unset');
+            if (!prompt) {
+              prompt = document.createElement('div');
+              prompt.className = 'doni-budget-prompt';
+              prompt.innerHTML = `이번 달 얼마나 쓸지 정해볼까?<br><span>여기를 눌러서 수입이랑 고정비를 알려줘 :)</span>`;
+              prompt.onclick = () => {
+                const b = document.querySelector('.action-btns .btn-outline');
+                if (b) b.click();
+              };
+              card.appendChild(prompt);
+            }
+          } else {
+            card.classList.remove('doni-budget-unset');
+            if (prompt) prompt.remove();
+          }
+        }
+
         _nlObserver = new MutationObserver(() => {
           const onChat = !!document.querySelector('.chat-screen');
           if (onChat) { updateBarPos(); bar.style.display = 'flex'; }
           else { bar.style.display = 'none'; }
           // .plus-btn, .fake-input만 숨기기 — .input-bar 전체 건드리면 탭바 아이콘 깨짐
           document.querySelectorAll('.plus-btn, .fake-input').forEach(el => { el.style.display = 'none'; });
+          updateHomeBudgetPrompt();
         });
         _nlObserver.observe(document.getElementById('app'), { childList: true, subtree: true });
         // 이미 chat-screen이 있을 때도 즉시 적용 (첫 진입 시 mutation 없음)
         if (document.querySelector('.chat-screen')) { updateBarPos(); bar.style.display = 'flex'; }
         document.querySelectorAll('.plus-btn, .fake-input').forEach(el => { el.style.display = 'none'; });
+        updateHomeBudgetPrompt();
       }
 
       // 커스텀 모달 (TWA에서 alert/confirm 대체)
