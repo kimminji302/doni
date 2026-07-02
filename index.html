@@ -878,6 +878,7 @@
       function injectSettingButtons() {
         if (_settingObserver) return;
         let lastParent = null;
+        let lastSettingMonth = null;
         _settingObserver = new MutationObserver(() => {
           const titles = document.querySelectorAll('.page-title');
           let found = false;
@@ -885,8 +886,13 @@
             if (!el.textContent.includes('이달의 약속')) return;
             found = true;
             const parent = el.parentElement;
+            // 월 이동 시 목표지출 카드를 새 월 기준으로 다시 그림
+            const st = window._doniStore;
+            const monthKey = st ? `${st.curYear}-${st.curMonth}` : '';
+            const monthChanged = lastSettingMonth !== null && monthKey !== lastSettingMonth;
+            lastSettingMonth = monthKey;
             // Vue가 설정탭을 새로 렌더링하면 parent가 바뀜 → 재주입
-            if (parent === lastParent) return;
+            if (parent === lastParent && !monthChanged) return;
             lastParent = parent;
             parent.style.position = 'relative';
             // 이전에 주입한 요소 제거
@@ -909,8 +915,10 @@
 
             // 목표 지출 금액 입력 섹션 주입 (최상단)
             if (!document.getElementById('doni-goal-amount-wrap')) {
+              // 보고 있는 월(스토어 기준)의 목표를 편집 — 월 네비게이션과 연동
               const now = new Date();
-              const y = now.getFullYear(), m = now.getMonth()+1;
+              const y = st ? st.curYear : now.getFullYear();
+              const m = st ? st.curMonth : now.getMonth()+1;
               const curGoal = getGoalAmount(y, m);
               const score = getScore();
 
@@ -925,7 +933,7 @@
               const curGoalFormatted = curGoal ? curGoal.toLocaleString('ko-KR') : '';
               goalWrap.innerHTML = `
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-                  <span style="font-size:15px;font-weight:700;color:var(--ink);">이번 달 목표 지출</span>
+                  <span style="font-size:15px;font-weight:700;color:var(--ink);">${m}월 목표 지출</span>
                   ${streakBadge}
                 </div>
                 <input id="doni-goal-amount-input" type="text" inputmode="numeric" placeholder="목표 금액 입력 (원)"
@@ -981,11 +989,9 @@
                 .setting-page .setting-card,
                 .setting-page .avail-row,
                 .setting-page .avail-label,
-                .setting-page .date-nav-wrap,
                 .setting-page .goal-label,
                 .setting-page .section-label,
-                .setting-page .clean-input,
-                .setting-page .date-nav { display:none!important }
+                .setting-page .clean-input { display:none!important }
               `;
               document.head.appendChild(s);
             }
@@ -1553,14 +1559,15 @@
           const card = document.querySelector('.balance-card');
           if (!store || !card) return;
           const set = store.curSet;
-          const unset = !Number(set.inc) && !Number(set.fix);
+          // 수입/고정비도, 목표 지출도 없을 때만 유도 (목표 지출이 이 앱의 기본 모델)
+          const unset = !Number(set.inc) && !Number(set.fix) && !getGoalAmount(store.curYear, store.curMonth);
           let prompt = card.querySelector('.doni-budget-prompt');
           if (unset) {
             card.classList.add('doni-budget-unset');
             if (!prompt) {
               prompt = document.createElement('div');
               prompt.className = 'doni-budget-prompt';
-              prompt.innerHTML = `이번 달 얼마나 쓸지 정해볼까?<br><span>여기를 눌러서 수입이랑 고정비를 알려줘 :)</span>`;
+              prompt.innerHTML = `이번 달 얼마나 쓸지 정해볼까?<br><span>여기를 눌러서 목표 지출을 정해줘 :)</span>`;
               prompt.onclick = () => {
                 const b = document.querySelector('.action-btns .btn-outline');
                 if (b) b.click();
