@@ -1279,7 +1279,7 @@
         const growthTag = /성장|배움|공부|투자|자기계발|책|강의|발전|학원|수업|강좌|인강|수강/i;
         const growthEmotion = /자기계발|성장했|발전했|배웠/i;
         const livingWords = /생활|필요|생필품|마트|식료품|일상|당연|그냥/i;
-        const wasteWords = /방황|충동|후회|아까|낭비|쓸데|실수|허무|괜히/i;
+        const wasteWords = /방황|충동구매|충동|후회|아까|낭비|쓸데|실수|허무|괜히|스트레스|홧김|짜증|열받|빡쳐|빡침|우울/i;
         if (growthTag.test(text)) result.tag = 'growth';
         else if (joyWords.test(text)) result.tag = 'joy';
         else if (livingWords.test(text)) result.tag = 'living';
@@ -1293,11 +1293,11 @@
           .replace(/[\d,]+\s*원/, '')
           .replace(/만\s*원/, '')
           .replace(joyWords, '').replace(growthEmotion, '').replace(livingWords, '').replace(wasteWords, '')
-          .replace(/기분|감정|느낌|썼는데|썼어|좋았어|좋았다|좋아/g, ' ')
+          .replace(/기분|감정|느낌|썼는데|썼어|좋았어|좋았다|좋아|먹었어|먹었다|먹음|마셨어|마셨다|샀어|샀다|시켰어|받아서|받았어|받았|받아|나서|해서/g, ' ')
           .replace(/에서|에게|에|한테|부터|까지|으로|로|을|를|은|는|서|도|만|씀|샀|먹었|했어|했다|ㅠ|ㅜ|~|!|\?/g, ' ')
           .replace(/\s+/g, ' ').trim();
         // 첫 단어(들) 추출 (한 글자 단어 및 "원" 단독 제거)
-        const words = itemText.split(' ').filter(w => w.length >= 1 && !/^[에서은는이가을를에게로도만]$/.test(w) && w !== '원');
+        const words = itemText.split(' ').filter(w => w.length >= 1 && !/^[에서은는이가을를에게로도만어다야요]$/.test(w) && w !== '원');
         result.item = words.slice(0, 2).join(' ');
 
         // 카테고리 키워드 매핑
