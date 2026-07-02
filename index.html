@@ -294,7 +294,6 @@
         }
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         window._sb = sb;
-        window._supabase = sb;
 
         // ── localStorage intercept ──────────────────────────────
         const EXP_KEY  = 'doni_exp_v3';
@@ -1237,8 +1236,19 @@
           }
         }
         if (cost === null) {
-          // "만원"
-          if (/\b만\s*원/.test(text)) cost = 10000;
+          // "이만원", "삼만원", "십만원", "이십만원" 같은 한글 수사 × 만
+          const kMap = { '일': 1, '이': 2, '삼': 3, '사': 4, '오': 5, '육': 6, '칠': 7, '팔': 8, '구': 9 };
+          const km = text.match(/([일이삼사오육칠팔구])?\s*(십)?\s*([일이삼사오육칠팔구])?\s*만\s*원?/);
+          if (km && (km[1] || km[2] || km[3])) {
+            let n = 0;
+            if (km[2]) n = (km[1] ? kMap[km[1]] : 1) * 10 + (km[3] ? kMap[km[3]] : 0); // 십만, 이십만, 이십오만
+            else n = kMap[km[1] || km[3]] || 1; // 이만, 삼만
+            cost = n * 10000;
+          }
+        }
+        if (cost === null) {
+          // "만원" — 앞에 숫자/수사가 없는 단독 "만"
+          if (/(?<![일이삼사오육칠팔구십\d.])만\s*원/.test(text)) cost = 10000;
         }
         if (cost === null) {
           // "2천원", "3천원" 등 숫자+천+원
@@ -1305,11 +1315,12 @@
         if (window._doniStore) {
           try {
             const fullDate = expense.fullDate || new Date().toISOString().slice(0,10);
-            const dt = new Date(fullDate);
+            // 'YYYY-MM-DD'를 new Date()로 넘기면 UTC 자정으로 파싱돼 타임존에 따라 하루 밀림
+            const [fy, fm] = fullDate.split('-').map(Number);
             const toSave = {
               id: crypto.randomUUID(),
-              year: dt.getFullYear(),
-              month: dt.getMonth() + 1,
+              year: fy,
+              month: fm,
               fullDate: fullDate,
               time: '',
               item: expense.item || '',
@@ -1365,12 +1376,17 @@
           return document.querySelector('.chat-room') || document.querySelector('.chat-screen');
         }
 
+        // 사용자 입력을 innerHTML에 넣기 전 XSS 방지 이스케이프
+        function esc(s) {
+          return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
         function injectUserBubble(text) {
           const container = findMsgContainer();
           if (!container) return;
           const wrap = document.createElement('div');
           wrap.className = 'doni-user-bubble-wrap';
-          wrap.innerHTML = `<div class="doni-user-bubble">${text.replace(/</g,'&lt;')}</div>`;
+          wrap.innerHTML = `<div class="doni-user-bubble">${esc(text)}</div>`;
           container.appendChild(wrap);
           container.scrollTop = container.scrollHeight;
         }
@@ -1380,13 +1396,14 @@
           if (!container) return;
           const costStr = parsed.cost ? parsed.cost.toLocaleString('ko-KR') + '원' : '';
           const dateLabel = (() => {
-            const now = new Date(); const t = new Date(parsed.fullDate);
-            const diff = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(t.getFullYear(), t.getMonth(), t.getDate())) / 86400000);
+            const now = new Date();
+            const [ty, tm, td] = String(parsed.fullDate || '').split('-').map(Number);
+            const diff = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(ty, tm - 1, td)) / 86400000);
             return diff === 0 ? '오늘' : diff === 1 ? '어제' : diff === 2 ? '그저께' : parsed.fullDate;
           })();
           const dateNote = dateLabel !== '오늘' ? ` (${dateLabel})` : '';
           const summary = parsed.item && costStr
-            ? `${parsed.item}에 ${costStr} 썼네${dateNote}!`
+            ? `${esc(parsed.item)}에 ${costStr} 썼네${dateNote}!`
             : costStr
             ? `${costStr} 썼네${dateNote}!`
             : dateNote ? `${dateNote.trim()} 소비네!` : '';
@@ -1416,7 +1433,6 @@
           });
 
           wrap.querySelector('.doni-save-chip').onclick = () => {
-            const dateObj = new Date(parsed.fullDate || new Date().toISOString().slice(0,10));
             const expense = {
               fullDate: parsed.fullDate || new Date().toISOString().slice(0,10),
               item: parsed.item || '',

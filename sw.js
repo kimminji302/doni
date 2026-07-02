@@ -1,9 +1,8 @@
-const CACHE_VERSION = 'doni-v5';
+const CACHE_VERSION = 'doni-v6';
 const STATIC_ASSETS = [
+  '/',
   '/doni.gif',
-  '/doni_profile.gif',
   '/favicon.png',
-  '/google_logo.jpg',
   '/home.png',
   '/icon-512.png',
   '/badge.png',
@@ -49,7 +48,16 @@ self.addEventListener('fetch', e => {
 
   if (url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '/sw.js') {
     e.respondWith(
-      fetch(e.request, { cache: 'no-store' }).catch(() => caches.match(e.request))
+      fetch(e.request, { cache: 'no-store' })
+        .then(res => {
+          // 성공한 응답을 캐시에 갱신해 오프라인 fallback을 최신으로 유지
+          if (res.ok && url.pathname !== '/sw.js') {
+            const copy = res.clone();
+            caches.open(CACHE_VERSION).then(cache => cache.put('/', copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match('/'))
     );
     return;
   }
