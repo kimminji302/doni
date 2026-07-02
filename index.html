@@ -1573,10 +1573,23 @@
           }
         }
 
+        // 채팅 화면에서 월을 넘기면 Vue 메시지는 새로 그려지지만
+        // 우리가 주입한 말풍선은 남아있으므로 월 변경 감지 시 제거
+        let _lastChatMonth = null;
+        function clearInjectedOnMonthChange() {
+          const df = document.querySelector('.chat-screen .date-floater');
+          if (!df) { _lastChatMonth = null; return; }
+          const m = df.textContent.trim();
+          if (_lastChatMonth && m !== _lastChatMonth) {
+            document.querySelectorAll('.doni-user-bubble-wrap, .doni-bot-bubble-wrap').forEach(el => el.remove());
+          }
+          _lastChatMonth = m;
+        }
+
         _nlObserver = new MutationObserver(() => {
           const onChat = !!document.querySelector('.chat-screen');
-          if (onChat) { updateBarPos(); bar.style.display = 'flex'; }
-          else { bar.style.display = 'none'; }
+          if (onChat) { updateBarPos(); bar.style.display = 'flex'; clearInjectedOnMonthChange(); }
+          else { bar.style.display = 'none'; _lastChatMonth = null; }
           // .plus-btn, .fake-input만 숨기기 — .input-bar 전체 건드리면 탭바 아이콘 깨짐
           document.querySelectorAll('.plus-btn, .fake-input').forEach(el => { el.style.display = 'none'; });
           updateHomeBudgetPrompt();
