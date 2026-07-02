@@ -972,10 +972,12 @@
                 injectHomeProgress();
               };
 
-              // 페이지 title 아래 삽입
+              // 월 네비게이션 아래 삽입 (제목 → 월네비 → 목표지출 카드 순서)
+              const navEl = parent.querySelector('.date-nav-wrap');
               const titleEl = parent.querySelector('.page-title');
-              if (titleEl && titleEl.nextSibling) {
-                parent.insertBefore(goalWrap, titleEl.nextSibling);
+              const anchor = navEl || titleEl;
+              if (anchor && anchor.nextSibling) {
+                parent.insertBefore(goalWrap, anchor.nextSibling);
               } else {
                 parent.appendChild(goalWrap);
               }
