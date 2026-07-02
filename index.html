@@ -1564,6 +1564,15 @@
               if (n >= 2) msg = `이번 달 ${n}번째 ${tagLabels[tag]} 소비야!\n` + msg;
             } catch(e) {}
           }
+          // 방황이 3번 연속 기록되면 위로 대신 선제적 케어 멘트
+          if (tag === 'waste' && window._doniStore) {
+            try {
+              const recent = window._doniStore.expenses.slice(-3);
+              if (recent.length === 3 && recent.every(e => e.tag === 'waste')) {
+                msg = '요즘 마음이 좀 힘든가봐.\n방황 소비가 세 번 이어지고 있어.\n괜찮아, 소비보다 네 마음이 먼저야.\n오늘은 나랑 잠깐 쉬어가자 :)';
+              }
+            } catch(e) {}
+          }
           const container = findMsgContainer();
           if (!container) return;
           const w = document.createElement('div');
