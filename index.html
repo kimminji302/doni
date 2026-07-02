@@ -442,8 +442,14 @@
           const uid = window._currentUser?.id;
           const sb = window._sb;
           if (uid && sb) {
-            const { error } = await sb.from('push_subscriptions').insert({ user_id: uid, subscription: JSON.stringify(sub) });
-            if (error && error.code !== '23505') console.log('push save error', error);
+            // 이미 저장된 구독이면 insert 생략 — 매 로드마다 409(중복) 콘솔 노이즈 방지
+            const subStr = JSON.stringify(sub);
+            const { data: existing } = await sb.from('push_subscriptions')
+              .select('id').eq('user_id', uid).eq('subscription', subStr).limit(1);
+            if (!existing || !existing.length) {
+              const { error } = await sb.from('push_subscriptions').insert({ user_id: uid, subscription: subStr });
+              if (error && error.code !== '23505') console.log('push save error', error);
+            }
           }
         }
 
