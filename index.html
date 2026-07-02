@@ -1302,16 +1302,28 @@
       }
 
       function saveExpense(expense) {
-        // window._doniStore는 minified 코드의 reactive 스토어($)를 직접 노출한 참조
-        if (window._doniStore && typeof window._doniStore.addExpense === 'function') {
+        if (window._doniStore) {
           try {
-            window._doniStore.addExpense(expense);
-            // splice()는 같은 배열 참조를 유지해 computed dirty 처리가 안 될 수 있음
-            // 프로퍼티 자체를 새 배열로 교체 → Vue Proxy set trap 확실히 발동
-            const fresh = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
-            window._doniStore.expenses = fresh;
+            const fullDate = expense.fullDate || new Date().toISOString().slice(0,10);
+            const dt = new Date(fullDate);
+            const toSave = {
+              id: crypto.randomUUID(),
+              year: dt.getFullYear(),
+              month: dt.getMonth() + 1,
+              fullDate: fullDate,
+              time: '',
+              item: expense.item || '',
+              cost: Number(expense.cost) || 0,
+              tag: expense.tag || '',
+              category: expense.category || '',
+              customHash: expense.customHash || ''
+            };
+            // addExpense는 e.id가 있으면 UPDATE로 처리해 push를 건너뜀
+            // 직접 push → Vue reactive 배열 mutation → computed 즉시 무효화
+            window._doniStore.expenses.push(toSave);
+            window._doniStore.saveExpenses();
             return true;
-          } catch(e) {}
+          } catch(e) { console.error('[doni] save failed', e); }
         }
         return false;
       }
@@ -1406,8 +1418,6 @@
           wrap.querySelector('.doni-save-chip').onclick = () => {
             const dateObj = new Date(parsed.fullDate || new Date().toISOString().slice(0,10));
             const expense = {
-              id: crypto.randomUUID(),
-              year: dateObj.getFullYear(), month: dateObj.getMonth() + 1,
               fullDate: parsed.fullDate || new Date().toISOString().slice(0,10),
               item: parsed.item || '',
               cost: parsed.cost || 0, tag: selectedTag || '',
