@@ -174,7 +174,8 @@
     [data-theme="dark"] .profile img,
     [data-theme="dark"] .tag-name img,
     [data-theme="dark"] .hi-icon img,
-    [data-theme="dark"] img[src="doni.gif"] { filter: invert(1) !important; mix-blend-mode: normal !important; opacity: 1 !important; }
+    /* 색반전(invert) 대신 밝은 카드 배경 — 그림 원본 색 유지, 흰 부분이 검게 변하는 문제 방지 */
+    [data-theme="dark"] img[src="doni.gif"] { filter: none !important; mix-blend-mode: normal !important; opacity: 1 !important; background: #F9F7F2; border-radius: 20px; padding: 10px; }
     [data-theme="dark"] .bottom-nav { background: #000000 !important; }
     [data-theme="dark"] .nav-item { color: #555 !important; }
     [data-theme="dark"] .nav-item.active { color: #FFFFFF !important; }
