@@ -151,22 +151,26 @@
     .d-del::after { content: "×"; font-size: 18px; font-weight: 300; line-height: 1; color: #BDBDBD; }
 
     [data-theme="dark"] {
-      --bg: #000000;
-      --ink: #FFFFFF;
-      --sub: #888888;
-      --accent: #E8342A;
-      --accent-light: rgba(232,52,42,0.15);
-      --line: rgba(255,255,255,0.12);
-      --white: #111111;
-      --danger: #E57373;
+      /* 순수 검정/빨강 대신 라이트 모드와 같은 계열(따뜻한 크림·카라멜)을 어둡게 반전 — 브랜드 톤 유지 */
+      --bg: #14110D;
+      --ink: #F3EFE7;
+      --sub: #9C948A;
+      --accent: #E3B587;
+      --accent-light: rgba(227,181,135,0.15);
+      --line: rgba(255,255,255,0.11);
+      --white: #1D1913;
+      --danger: #E0776A;
       --shadow: 0 4px 20px rgba(0,0,0,0.6);
       --shadow-sm: 0 2px 8px rgba(0,0,0,0.5);
     }
-    [data-theme="dark"] html, [data-theme="dark"] body { background: #000000; color-scheme: dark; }
-    [data-theme="dark"] #auth-overlay { background: #000000 !important; }
+    [data-theme="dark"] html, [data-theme="dark"] body { background: #14110D; color-scheme: dark; }
+    [data-theme="dark"] #auth-overlay { background: #14110D !important; }
     [data-theme="dark"] #auth-overlay div { background: transparent !important; }
     [data-theme="dark"] #auth-overlay h1,
     [data-theme="dark"] #auth-overlay p { color: #FFFFFF !important; }
+    /* 라인 아트 단일 규칙 — 캐릭터·감정 태그·프로필 GIF 전부 배경/프레임 없이 선 색만 흰색으로 반전.
+       원본이 순수 흑백 라인(투명 배경, 흰색 채움 없음)이라 invert만으로 안전하게 전환됨.
+       mix-blend-mode:normal은 라이트 모드의 multiply 블렌드(어두운 배경에서 사라짐)를 취소하기 위함. */
     [data-theme="dark"] #auth-overlay img,
     [data-theme="dark"] .doni-char img,
     [data-theme="dark"] .nav-icon img,
@@ -174,12 +178,11 @@
     [data-theme="dark"] .profile img,
     [data-theme="dark"] .tag-name img,
     [data-theme="dark"] .hi-icon img,
-    /* 색반전(invert) 대신 밝은 카드 배경 — 그림 원본 색 유지, 흰 부분이 검게 변하는 문제 방지 */
-    [data-theme="dark"] img[src="doni.gif"] { filter: none !important; mix-blend-mode: normal !important; opacity: 1 !important; background: #F9F7F2; border-radius: 20px; padding: 10px; }
-    [data-theme="dark"] .bottom-nav { background: #000000 !important; }
-    [data-theme="dark"] .nav-item { color: #555 !important; }
-    [data-theme="dark"] .nav-item.active { color: #FFFFFF !important; }
-    [data-theme="dark"] .chat-header { background: #111111 !important; }
+    [data-theme="dark"] img[src="doni.gif"] { filter: invert(1) !important; mix-blend-mode: normal !important; opacity: 1 !important; background: none !important; border-radius: 0 !important; padding: 0 !important; }
+    [data-theme="dark"] .bottom-nav { background: #14110D !important; }
+    [data-theme="dark"] .nav-item { color: #6B655C !important; }
+    [data-theme="dark"] .nav-item.active { color: #F3EFE7 !important; }
+    [data-theme="dark"] .chat-header { background: #1D1913 !important; }
     [data-theme="dark"] .btn-fill { background: #FFFFFF !important; color: #000000 !important; }
     [data-theme="dark"] .btn-outline { border-color: rgba(255,255,255,0.3) !important; color: #FFFFFF !important; }
     [data-theme="dark"] .speech-bubble { background: #111111 !important; color: #FFFFFF !important; }
@@ -814,8 +817,8 @@
           wrap.id = 'doni-progress-bar-wrap';
           wrap.style.cssText = 'padding:0 0 16px;text-align:center;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:12px;';
 
-          const barColor = pct >= 100 ? '#E8342A' : pct >= 80 ? '#f59e0b' : 'var(--accent)';
-          const remainColor = remaining < 0 ? '#E8342A' : 'var(--ink)';
+          const barColor = pct >= 100 ? 'var(--danger)' : pct >= 80 ? '#f59e0b' : 'var(--accent)';
+          const remainColor = remaining < 0 ? 'var(--danger)' : 'var(--ink)';
           const remainLabel = remaining >= 0 ? '남은 금액' : '초과 금액';
           const remainAmt = Math.abs(remaining).toLocaleString();
 
