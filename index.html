@@ -485,6 +485,7 @@
           return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
         }
         window.requestPushPermission = requestPushPermission;
+        window.subscribePush = subscribePush; // 설정 토글(외부 스코프)에서 호출하기 위해 노출
 
         // Supabase 준비되면 익명 기기 id로 푸시만 등록 (앱 표시는 아래 showApp에서 이미 처리)
         try { requestPushPermission(); } catch(e) { console.error('push init error:', e); }
@@ -1077,7 +1078,8 @@
                 }
                 statusEl.textContent = '등록 중...';
                 try {
-                  await subscribePush(true);
+                  if (typeof window.subscribePush !== 'function') { throw new Error('알림 준비 중이에요. 잠시 후 다시 시도해줘'); }
+                  await window.subscribePush(true);
                   setToggleOn();
                 } catch(e) {
                   setToggleOff();
