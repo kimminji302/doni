@@ -460,17 +460,21 @@
             });
           }
           // 로그인 없이 익명 기기 id로 푸시 구독 저장 (이름/이메일 없음 — 브라우저 푸시 엔드포인트만)
-          const uid = getDeviceId();
-          const sb = window._sb;
-          if (sb) {
-            // 이미 저장된 구독이면 insert 생략 — 매 로드마다 409(중복) 콘솔 노이즈 방지
-            const subStr = JSON.stringify(sub);
-            const { data: existing } = await sb.from('push_subscriptions')
-              .select('id').eq('user_id', uid).eq('subscription', subStr).limit(1);
-            if (!existing || !existing.length) {
-              const { error } = await sb.from('push_subscriptions').insert({ user_id: uid, subscription: subStr });
-              if (error && error.code !== '23505') console.log('push save error', error);
+          // 서버 저장이 실패해도 알림 등록 자체는 성공 처리 (앱은 서버 없이도 동작)
+          try {
+            const uid = getDeviceId();
+            const sb = window._sb;
+            if (sb) {
+              const subStr = JSON.stringify(sub);
+              const { data: existing } = await sb.from('push_subscriptions')
+                .select('id').eq('user_id', uid).eq('subscription', subStr).limit(1);
+              if (!existing || !existing.length) {
+                const { error } = await sb.from('push_subscriptions').insert({ user_id: uid, subscription: subStr });
+                if (error && error.code !== '23505') console.log('[doni] push save error', error);
+              }
             }
+          } catch(dbErr) {
+            console.log('[doni] push DB skip', dbErr);
           }
         }
 
@@ -1077,7 +1081,8 @@
                   setToggleOn();
                 } catch(e) {
                   setToggleOff();
-                  await window.doniAlert('알림 등록에 실패했어요. 브라우저 설정에서 알림이 허용되어 있는지 확인해주세요.');
+                  console.error('[doni] push subscribe error', e);
+                  await window.doniAlert('알림 등록 실패: ' + (e && (e.name || e.message) ? ((e.name||'') + ' — ' + (e.message||'')) : String(e)));
                 }
               };
               const saveBtn = parent.querySelector('.btn-fill');
