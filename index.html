@@ -269,7 +269,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
     </button>
   </div>
-  <div id="auth-overlay" style="display:flex;position:fixed;inset:0;z-index:9999;background:#F9F7F2;flex-direction:column;align-items:center;justify-content:center;font-family:'Gowun Batang',serif;">
+  <div id="auth-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#F9F7F2;flex-direction:column;align-items:center;justify-content:center;font-family:'Gowun Batang',serif;">
     <div style="display:flex;flex-direction:column;align-items:center;gap:24px;padding:48px 32px;max-width:360px;width:100%;">
       <img src="doni.gif" alt="돈이" style="width:120px;height:120px;object-fit:contain;">
       <div style="text-align:center;">
@@ -292,9 +292,22 @@
       const overlay = document.getElementById('auth-overlay');
       const appEl = document.getElementById('app');
 
-      // 오버레이를 먼저 보여주고 세션 확인 후 전환
-      overlay.style.display = 'flex';
+      // 로그인 제거: 오버레이 숨기고 바로 앱 구동 (localStorage 전용, 개인정보 미수집)
+      overlay.style.display = 'none';
       appEl.style.display = 'none';
+
+      // 익명 기기 식별자 — 이름/이메일 없이 이 기기의 푸시 구독만 구분 (개인 식별 불가)
+      function getDeviceId() {
+        let id = localStorage.getItem('doni_device_id');
+        if (!id) {
+          id = (typeof crypto?.randomUUID === 'function')
+            ? crypto.randomUUID()
+            : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); });
+          localStorage.setItem('doni_device_id', id);
+        }
+        return id;
+      }
+      window.getDeviceId = getDeviceId;
 
       function initSupabase() {
         if (!window.supabase) {
@@ -373,10 +386,8 @@
           } catch(e) { return false; }
         };
 
-        localStorage.setItem = function(key, value) {
-          _origSet(key, value);
-          syncToSupabase(key, value);
-        };
+        // 로그인 제거: 지출·설정·계획은 이 기기 localStorage에만 저장 (서버 미러링 안 함)
+        // (기존 setItem 몽키패치 제거 — 개인 소비 데이터를 서버로 보내지 않음)
 
         async function loadFromSupabase(uid) {
           try {
@@ -448,9 +459,10 @@
               applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
             });
           }
-          const uid = window._currentUser?.id;
+          // 로그인 없이 익명 기기 id로 푸시 구독 저장 (이름/이메일 없음 — 브라우저 푸시 엔드포인트만)
+          const uid = getDeviceId();
           const sb = window._sb;
-          if (uid && sb) {
+          if (sb) {
             // 이미 저장된 구독이면 insert 생략 — 매 로드마다 409(중복) 콘솔 노이즈 방지
             const subStr = JSON.stringify(sub);
             const { data: existing } = await sb.from('push_subscriptions')
@@ -470,72 +482,8 @@
         }
         window.requestPushPermission = requestPushPermission;
 
-        function showApp(user) {
-          window._currentUser = user;
-          // 홈탭 balance-card 즉시 숨김 (NaN 노출 방지, 우리 진행바로 대체)
-          if (!document.getElementById('doni-balance-hide-style')) {
-            const s = document.createElement('style');
-            s.id = 'doni-balance-hide-style';
-            s.textContent = '.home .balance-card{display:none!important}.header-balance{display:none!important}';
-            document.head.appendChild(s);
-          }
-          loadFromSupabase(user.id).then(ready => {
-            if (ready) {
-              overlay.style.display = 'none';
-              appEl.style.display = '';
-              injectLogoutButton();
-              injectSettingButtons();
-              injectHomeProgress();
-              injectChatHeader();
-              injectNLButton();
-              checkMonthlyResult();
-              requestPushPermission();
-            }
-          });
-        }
-
-        function showLogin() {
-          const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-          overlay.style.background = isDark ? '#000000' : '#F9F7F2';
-          overlay.style.display = 'flex';
-          appEl.style.display = 'none';
-          window._currentUser = null;
-        }
-
-        sb.auth.getSession().then(({ data: { session } }) => {
-          try {
-            if (session) showApp(session.user);
-            else showLogin();
-          } catch(e) { console.error('session init error:', e); showLogin(); }
-        });
-
-        sb.auth.onAuthStateChange((event, session) => {
-          try {
-            if (session) showApp(session.user);
-            else showLogin();
-          } catch(e) { console.error('auth state error:', e); showLogin(); }
-        });
-
-        window.signInWithGoogle = async function() {
-          const btn = document.getElementById('google-login-btn');
-          btn.disabled = true;
-          btn.style.opacity = '0.7';
-          const { error } = await sb.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: 'https://doniapp.kr' }
-          });
-          if (error) {
-            const errEl = document.getElementById('auth-error');
-            errEl.textContent = '로그인 중 오류가 발생했어요. 다시 시도해주세요.';
-            errEl.style.display = 'block';
-            btn.disabled = false;
-            btn.style.opacity = '1';
-          }
-        };
-
-        window.signOut = async function() {
-          await sb.auth.signOut();
-        };
+        // Supabase 준비되면 익명 기기 id로 푸시만 등록 (앱 표시는 아래 showApp에서 이미 처리)
+        try { requestPushPermission(); } catch(e) { console.error('push init error:', e); }
       }
 
       // 설정탭 "이달의 약속" 페이지에 로그아웃 버튼 주입 (탭 재진입 시에도 재주입)
@@ -1149,77 +1097,23 @@
                 resetBtn.id = 'doni-reset-btn';
                 resetBtn.textContent = '초기화';
                 resetBtn.onclick = async () => {
-                  const ok = await window.doniConfirm('모든 데이터를 초기화할까요?\n(로컬 및 서버 데이터 모두 삭제됩니다)');
+                  const ok = await window.doniConfirm('이 기기의 모든 기록을 지울까요?\n(되돌릴 수 없어요)');
                   if (!ok) return;
-                  // localStorage 삭제
+                  // 이 기기 localStorage 기록만 삭제 (서버에 소비 데이터 없음)
                   ['doni_exp_v3','doni_set_v3','doni_plan_v3','doni_score_v1','doni_start_month'].forEach(k => localStorage.removeItem(k));
-                  // Supabase 삭제
-                  const uid = window._currentUser?.id;
-                  if (uid && window._sb) {
-                    try {
-                      await Promise.all([
-                        window._sb.from('expenses').delete().eq('user_id', uid),
-                        window._sb.from('monthly_settings').delete().eq('user_id', uid),
-                        window._sb.from('plans').delete().eq('user_id', uid),
-                      ]);
-                    } catch(e) { console.warn('Supabase reset error', e); }
-                  }
                   location.reload();
                 };
                 resetBtn.style.cssText = 'flex:1 !important;padding:13px !important;border:1px solid var(--line) !important;background:transparent !important;color:var(--sub) !important;border-radius:12px !important;font-size:13px !important;font-family:inherit !important;font-weight:normal !important;cursor:pointer !important;box-shadow:none !important;transform:none !important;';
                 btnRow.appendChild(resetBtn);
-                const syncSaveBtn = document.createElement('button');
-                syncSaveBtn.id = 'doni-sync-btn';
-                syncSaveBtn.textContent = '기록 저장';
-                syncSaveBtn.style.cssText = 'flex:1;padding:13px;border:1px solid var(--line);background:transparent;color:var(--sub);border-radius:12px;font-size:13px;font-family:inherit;cursor:pointer;';
-                syncSaveBtn.onclick = async () => {
-                  const uid = window._currentUser?.id;
-                  if (!uid) { await window.doniAlert('로그인이 필요해요.'); return; }
-                  const ok = await window.doniConfirm('이 기기의 기록과 서버의 기록을 합칩니다.\n계속할까요?');
-                  if (!ok) { syncSaveBtn.textContent = '기록 저장'; syncSaveBtn.disabled = false; return; }
-                  syncSaveBtn.textContent = '저장 중...';
-                  syncSaveBtn.disabled = true;
-                  try {
-                    const sb = window._sb;
-                    if (!sb) throw new Error('연결 오류');
-                    const origGet = Storage.prototype.getItem.bind(localStorage);
-                    const origSet = Storage.prototype.setItem.bind(localStorage);
-                    const [expRes, setRes, planRes] = await Promise.all([
-                      sb.from('expenses').select('*').eq('user_id', uid),
-                      sb.from('monthly_settings').select('*').eq('user_id', uid),
-                      sb.from('plans').select('*').eq('user_id', uid)
-                    ]);
-                    const errs = [expRes.error, setRes.error, planRes.error].filter(Boolean);
-                    if (errs.length > 0) throw new Error(errs[0].message);
-                    let localExp = []; try { localExp = JSON.parse(origGet('doni_exp_v3') || '[]'); } catch(e) {}
-                    let localSet = {}; try { localSet = JSON.parse(origGet('doni_set_v3') || '{}'); } catch(e) {}
-                    let localPlan = []; try { localPlan = JSON.parse(origGet('doni_plan_v3') || '[]'); } catch(e) {}
-                    const remoteExp = (expRes.data || []).map(e => ({ id: e.id, year: e.year, month: e.month, fullDate: e.full_date, item: e.item, cost: e.cost, tag: e.tag, customHash: e.custom_hash }));
-                    const expMap = {};
-                    remoteExp.forEach(e => { expMap[e.id] = e; });
-                    localExp.forEach(e => { expMap[e.id] = e; });
-                    const mergedExp = Object.values(expMap);
-                    const mergedSet = {};
-                    (setRes.data || []).forEach(s => { mergedSet[s.year + '-' + s.month] = s.data; });
-                    Object.assign(mergedSet, localSet);
-                    const remotePlan = (planRes.data || []).map(p => ({ id: p.id, item: p.item, cost: p.cost, tag: p.tag, reason: p.reason, doniReply: p.doni_reply, status: p.status }));
-                    const planMap = {};
-                    remotePlan.forEach(p => { planMap[p.id] = p; });
-                    localPlan.forEach(p => { planMap[p.id] = p; });
-                    const mergedPlan = Object.values(planMap);
-                    origSet('doni_exp_v3', JSON.stringify(mergedExp));
-                    origSet('doni_set_v3', JSON.stringify(mergedSet));
-                    origSet('doni_plan_v3', JSON.stringify(mergedPlan));
-                    await window.doniSync();
-                    syncSaveBtn.textContent = `${mergedExp.length}건 저장 완료!`;
-                    setTimeout(() => location.reload(), 1000);
-                  } catch(e) {
-                    syncSaveBtn.textContent = '기록 저장';
-                    syncSaveBtn.disabled = false;
-                    await window.doniAlert('저장 실패: ' + e.message);
-                  }
-                };
-                btnRow.appendChild(syncSaveBtn);
+                // 로그인 없는 앱임을 알리는 안내 문구
+                if (!parent.querySelector('#doni-privacy-note')) {
+                  const note = document.createElement('p');
+                  note.id = 'doni-privacy-note';
+                  note.textContent = '도니는 로그인도, 이름도, 이메일도 받지 않아요. 네 기록은 이 기기에만 저장돼요.';
+                  note.style.cssText = 'margin:16px 4px 40px;font-size:12px;line-height:1.7;color:var(--sub);text-align:center;word-break:keep-all;';
+                  btnRow.after(note);
+                }
+                // '기록 저장'(서버 동기화) 버튼 제거 — 로그인/서버 없는 로컬 전용 앱
               }
             }
           });
@@ -1735,7 +1629,29 @@
       };
 
 
-      initSupabase();
+      // 로그인 없이 즉시 앱 표시 (Supabase 로딩과 무관 — 순수 로컬 구동)
+      function showApp() {
+        window._currentUser = { id: getDeviceId() };
+        // 홈탭 balance-card 즉시 숨김 (NaN 노출 방지, 우리 진행바로 대체)
+        if (!document.getElementById('doni-balance-hide-style')) {
+          const s = document.createElement('style');
+          s.id = 'doni-balance-hide-style';
+          s.textContent = '.home .balance-card{display:none!important}.header-balance{display:none!important}';
+          document.head.appendChild(s);
+        }
+        overlay.style.display = 'none';
+        appEl.style.display = '';
+        injectSettingButtons();
+        injectHomeProgress();
+        injectChatHeader();
+        injectNLButton();
+        checkMonthlyResult();
+      }
+      window.signInWithGoogle = function() {};
+      window.signOut = function() {};
+
+      try { showApp(); } catch(e) { console.error('app init error:', e); }
+      initSupabase(); // 익명 푸시 등록용 (앱 표시와 독립)
     })();
   </script>
   <script>
