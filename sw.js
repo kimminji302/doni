@@ -1,7 +1,8 @@
-const CACHE_VERSION = 'doni-v7';
+const CACHE_VERSION = 'doni-v8';
 const STATIC_ASSETS = [
   '/',
   '/doni.gif',
+  '/graduation.js',
   '/favicon.png',
   '/home.png',
   '/icon-512.png',
@@ -46,6 +47,8 @@ self.addEventListener('notificationclick', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
+  if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
+
   if (url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '/sw.js') {
     e.respondWith(
       fetch(e.request, { cache: 'no-store' })
@@ -57,7 +60,7 @@ self.addEventListener('fetch', e => {
           }
           return res;
         })
-        .catch(() => caches.match('/'))
+        .catch(() => url.pathname === '/sw.js' ? Response.error() : caches.match('/'))
     );
     return;
   }

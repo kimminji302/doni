@@ -28,7 +28,7 @@ function pickMessage() {
 
 async function sendPushToAll() {
   const { data, error } = await sb.from('push_subscriptions').select('subscription');
-  if (error) { console.error('fetch error', error); return; }
+  if (error) { console.error('fetch error', error); process.exitCode = 1; return; }
 
   let success = 0, fail = 0;
   for (const row of data) {
@@ -38,7 +38,7 @@ async function sendPushToAll() {
       success++;
     } catch(e) {
       fail++;
-      if (e.statusCode === 410) {
+      if (e.statusCode === 410 || e.statusCode === 404) {
         // 만료된 구독 삭제
         await sb.from('push_subscriptions').delete().eq('subscription', row.subscription);
       }
@@ -47,4 +47,4 @@ async function sendPushToAll() {
   console.log(`완료: 성공 ${success}건, 실패 ${fail}건`);
 }
 
-sendPushToAll();
+sendPushToAll().catch(error => { console.error('push sender failed', error); process.exitCode = 1; });

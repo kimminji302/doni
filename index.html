@@ -284,6 +284,7 @@
     </div>
   </div>
   <div id="app" style="display:none"></div>
+  <script src="/graduation.js"></script>
   <script>
     (function() {
       const SUPABASE_URL = 'https://kuilgkjslbsovzapkxva.supabase.co';
@@ -317,122 +318,10 @@
         const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         window._sb = sb;
 
-        // ── localStorage intercept ──────────────────────────────
-        const EXP_KEY  = 'doni_exp_v3';
-        const SET_KEY  = 'doni_set_v3';
-        const PLAN_KEY = 'doni_plan_v3';
-        const _origSet = localStorage.setItem.bind(localStorage);
-
-        async function syncToSupabase(key, value) {
-          const uid = window._currentUser?.id;
-          if (!uid) return;
-          try {
-            if (key === EXP_KEY) {
-              let expenses; try { expenses = JSON.parse(value || '[]'); } catch(e) { expenses = []; }
-              await sb.from('expenses').delete().eq('user_id', uid);
-              if (expenses.length > 0) {
-                const isUUID = s => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(s));
-              const mkUUID = () => typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&0x3|0x8)).toString(16);});
-              const rows = expenses.map(e => ({
-                  id: isUUID(e.id) ? String(e.id) : mkUUID(), user_id: uid,
-                  year: e.year || 0, month: e.month || 0,
-                  full_date: e.fullDate || '', item: e.item || '',
-                  cost: Number(e.cost) || 0, tag: e.tag || '', custom_hash: e.customHash || ''
-                }));
-                await sb.from('expenses').insert(rows);
-              }
-            } else if (key === SET_KEY) {
-              let settings; try { settings = JSON.parse(value || '{}'); } catch(e) { settings = {}; }
-              for (const [ym, data] of Object.entries(settings)) {
-                const parts = ym.split('-');
-                const year = Number(parts[0]), month = Number(parts[1]);
-                if (!year || !month) continue;
-                await sb.from('monthly_settings')
-                  .upsert({ user_id: uid, year, month, data, updated_at: new Date().toISOString() },
-                    { onConflict: 'user_id,year,month' });
-              }
-            } else if (key === PLAN_KEY) {
-              let plans; try { plans = JSON.parse(value || '[]'); } catch(e) { plans = []; }
-              await sb.from('plans').delete().eq('user_id', uid);
-              if (plans.length > 0) {
-                const rows = plans.map(p => ({
-                  id: String(p.id), user_id: uid,
-                  item: p.item || '', cost: p.cost || 0,
-                  tag: p.tag || '', reason: p.reason || '',
-                  doni_reply: p.doniReply || '', status: p.status || 'thinking'
-                }));
-                await sb.from('plans').insert(rows);
-              }
-            } else if (key === 'doni_start_month') {
-              await sb.from('monthly_settings')
-                .upsert({ user_id: uid, year: 0, month: 0, data: { start_month: value } },
-                  { onConflict: 'user_id,year,month' });
-            }
-          } catch(e) { console.error('Supabase sync error:', e); }
-        }
-        window.doniSync = async function() {
-          const uid = window._currentUser?.id;
-          const sb = window._sb;
-          if (!uid || !sb) return false;
-          const origGet = Storage.prototype.getItem.bind(localStorage);
-          const expVal = origGet('doni_exp_v3');
-          const setVal = origGet('doni_set_v3');
-          const planVal = origGet('doni_plan_v3');
-          try {
-            if (expVal) await syncToSupabase('doni_exp_v3', expVal);
-            if (setVal) await syncToSupabase('doni_set_v3', setVal);
-            if (planVal) await syncToSupabase('doni_plan_v3', planVal);
-            return true;
-          } catch(e) { return false; }
-        };
-
-        // 로그인 제거: 지출·설정·계획은 이 기기 localStorage에만 저장 (서버 미러링 안 함)
-        // (기존 setItem 몽키패치 제거 — 개인 소비 데이터를 서버로 보내지 않음)
-
-        async function loadFromSupabase(uid) {
-          try {
-            const [expRes, setRes, planRes] = await Promise.all([
-              sb.from('expenses').select('*').eq('user_id', uid),
-              sb.from('monthly_settings').select('*').eq('user_id', uid),
-              sb.from('plans').select('*').eq('user_id', uid)
-            ]);
-            if (expRes.data && expRes.data.length > 0) {
-              const arr = expRes.data.map(e => ({
-                id: e.id, year: e.year, month: e.month,
-                fullDate: e.full_date, item: e.item,
-                cost: e.cost, tag: e.tag, customHash: e.custom_hash
-              }));
-              _origSet(EXP_KEY, JSON.stringify(arr));
-            }
-            if (setRes.data && setRes.data.length > 0) {
-              const obj = {};
-              setRes.data.forEach(s => {
-                if (s.year === 0 && s.month === 0) {
-                  // 사용자 환경설정 슬롯: start_month 복원
-                  if (s.data?.start_month) _origSet('doni_start_month', s.data.start_month);
-                } else {
-                  obj[s.year + '-' + s.month] = s.data;
-                }
-              });
-              _origSet(SET_KEY, JSON.stringify(obj));
-            }
-            if (planRes.data && planRes.data.length > 0) {
-              const arr = planRes.data.map(p => ({
-                id: p.id, item: p.item, cost: p.cost,
-                tag: p.tag, reason: p.reason,
-                doniReply: p.doni_reply, status: p.status
-              }));
-              _origSet(PLAN_KEY, JSON.stringify(arr));
-            }
-          } catch(e) { console.error('Supabase load error:', e); }
-          return true;
-        }
-        window.loadFromSupabase = loadFromSupabase;
-        // ───────────────────────────────────────────────────────
-
         const VAPID_PUBLIC_KEY = 'BPw1X158F52fE9o0eA-QdHnxXdboaKsYBvDEkhe-eCjya4t0dGpERKRIvSc4K-slCGOhg-dCbWUyb7vi49R24II';
 
         async function requestPushPermission() {
+          if (localStorage.getItem('doni_push_enabled') === 'false') return;
           if (!('PushManager' in window) || !('serviceWorker' in navigator)) return;
           if (Notification.permission === 'denied') return;
           if (Notification.permission === 'granted') {
@@ -442,7 +331,9 @@
           // 처음 방문자에게만 요청 (3초 후)
           setTimeout(async () => {
             const permission = await Notification.requestPermission();
-            if (permission === 'granted') await subscribePush();
+            if (permission === 'granted') {
+              try { await subscribePush(); } catch (e) { console.error('push subscribe error:', e); }
+            }
           }, 3000);
         }
 
@@ -460,21 +351,23 @@
             });
           }
           // 로그인 없이 익명 기기 id로 푸시 구독 저장 (이름/이메일 없음 — 브라우저 푸시 엔드포인트만)
-          // 서버 저장이 실패해도 알림 등록 자체는 성공 처리 (앱은 서버 없이도 동작)
+          // A browser subscription alone cannot receive the server's scheduled reminders.
           try {
             const uid = getDeviceId();
             const sb = window._sb;
             if (sb) {
               const subStr = JSON.stringify(sub);
-              const { data: existing } = await sb.from('push_subscriptions')
+              const { data: existing, error: lookupError } = await sb.from('push_subscriptions')
                 .select('id').eq('user_id', uid).eq('subscription', subStr).limit(1);
+              if (lookupError) throw lookupError;
               if (!existing || !existing.length) {
                 const { error } = await sb.from('push_subscriptions').insert({ user_id: uid, subscription: subStr });
-                if (error && error.code !== '23505') console.log('[doni] push save error', error);
+                if (error && error.code !== '23505') throw error;
               }
             }
           } catch(dbErr) {
-            console.log('[doni] push DB skip', dbErr);
+            await sub.unsubscribe().catch(() => {});
+            throw new Error('알림 서버에 등록하지 못했어요. 잠시 후 다시 시도해주세요.');
           }
         }
 
@@ -488,7 +381,7 @@
         window.subscribePush = subscribePush; // 설정 토글(외부 스코프)에서 호출하기 위해 노출
 
         // Supabase 준비되면 익명 기기 id로 푸시만 등록 (앱 표시는 아래 showApp에서 이미 처리)
-        try { requestPushPermission(); } catch(e) { console.error('push init error:', e); }
+        requestPushPermission().catch(e => console.error('push init error:', e));
       }
 
       // 설정탭 "이달의 약속" 페이지에 로그아웃 버튼 주입 (탭 재진입 시에도 재주입)
@@ -518,6 +411,9 @@
       }
 
       // ── 점수 데이터 헬퍼 ──────────────────────────────────────────
+      function localDateString(date = new Date()) {
+        return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+      }
       const SCORE_KEY = 'doni_score_v1';
       function getScore() {
         try { return JSON.parse(localStorage.getItem(SCORE_KEY) || 'null') || { streak:0, totalSuccess:0, history:{}, graduated:false, graduatedAt:null, graduateCount:0 }; }
@@ -528,7 +424,8 @@
       function getGoalAmount(year, month) {
         try {
           const sets = JSON.parse(localStorage.getItem('doni_set_v3') || '{}');
-          return (sets[year+'-'+month] || {}).goalAmount || 0;
+          const amount = Number(sets?.[year+'-'+month]?.goalAmount);
+          return Number.isFinite(amount) && amount > 0 ? amount : 0;
         } catch(e) { return 0; }
       }
       function setGoalAmount(year, month, amount) {
@@ -540,8 +437,8 @@
       function getMonthSpent(year, month) {
         try {
           const exps = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]');
-          return exps.filter(e => e.year === year && e.month === month && (e.cost||0) > 0)
-                     .reduce((s,e) => s + (e.cost||0), 0);
+          return exps.filter(e => +e.year === year && +e.month === month && Number(e.cost) > 0)
+                     .reduce((sum,e) => sum + Number(e.cost), 0);
         } catch(e) { return 0; }
       }
       function getMonthCount(year, month) {
@@ -551,75 +448,61 @@
         } catch(e) { return 0; }
       }
 
-      // 월말 달성 판정
+      // All completed calendar months are checked, including gaps between visits.
       function checkMonthlyResult() {
-        const now = new Date();
-        const y = now.getFullYear(), m = now.getMonth() + 1;
-        // 지난달
-        const prevY = m === 1 ? y-1 : y, prevM = m === 1 ? 12 : m-1;
-        const key = prevY+'-'+prevM;
-        const score = getScore();
-        if (score.history[key] !== undefined) return; // 이미 판정됨
-        const goalAmt = getGoalAmount(prevY, prevM);
-        if (!goalAmt) return; // 목표 미설정
-        const spent = getMonthSpent(prevY, prevM);
-        const success = spent <= goalAmt;
-        score.history[key] = success;
-        if (success) {
-          score.streak = (score.streak || 0) + 1;
-          score.totalSuccess = (score.totalSuccess || 0) + 1;
-        } else {
-          score.streak = 0;
+        const oldScore = getScore();
+        let settings = {}, expenses = [];
+        try { settings = JSON.parse(localStorage.getItem('doni_set_v3') || '{}'); } catch (_) {}
+        try { expenses = JSON.parse(localStorage.getItem('doni_exp_v3') || '[]'); } catch (_) {}
+        const result = window.DoniGraduation.evaluate(oldScore, settings, expenses);
+        const newlyGraduated = result.newlyGraduated;
+        delete result.newlyGraduated;
+        saveScore(result);
+        if (newlyGraduated) setTimeout(() => showGraduationPopup(), 800);
+        else if (result.streak > 0 && result.streak !== oldScore.streak) {
+          setTimeout(() => showStreakPopup(result.streak, true), 800);
         }
-        saveScore(score);
-        // 배지/졸업 팝업
-        setTimeout(() => showStreakPopup(score.streak, success), 800);
       }
 
       // 배지/졸업 팝업
       async function showStreakPopup(streak, success) {
         if (!success) return;
-        let msg = '';
-        if (streak === 1) msg = '🌱 1개월 성공!\n소비 습관 교정을 시작했어요.';
-        else if (streak === 3) msg = '🌿 3개월 연속 성공!\n좋은 습관이 만들어지고 있어요!';
-        else if (streak === 6) { showGraduationPopup(); return; }
-        else if (streak === 12) { showGraduationPopup(true); return; }
-        else if (streak > 1) msg = `✅ ${streak}개월 연속 성공!\n계속 이 페이스로 가요!`;
-        if (msg) await window.doniAlert(msg);
+        const msg = streak === 1
+          ? '1개월 성공!\n소비 습관 교정을 시작했어요.'
+          : `${streak}개월 연속 성공!\n계속 이 페이스로 가요!`;
+        await window.doniAlert(msg);
       }
 
-      // 졸업장 팝업
-      function showGraduationPopup(honorary) {
-        const score = getScore();
-        if (!score.graduated || honorary) {
-          score.graduated = true;
-          score.graduatedAt = new Date().toISOString();
-          score.graduateCount = (score.graduateCount||0) + 1;
-          saveScore(score);
-        }
+      // Award state is persisted before opening the dialog, so reloading cannot lose it.
+      function showGraduationPopup() {
+        if (document.getElementById('doni-graduation-popup')) return;
         const backdrop = document.createElement('div');
+        backdrop.id = 'doni-graduation-popup';
         backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
         const box = document.createElement('div');
+        box.setAttribute('role', 'dialog');
+        box.setAttribute('aria-modal', 'true');
+        box.setAttribute('aria-label', '졸업을 축하해요');
         box.style.cssText = 'background:var(--bg);border-radius:24px;padding:32px 24px;max-width:320px;width:90%;text-align:center;color:var(--ink);font-family:inherit;';
-        const title = honorary ? '🏆 명예 졸업' : '🎓 졸업을 축하해요!';
-        const sub = honorary ? '12개월 연속 목표 달성! 진정한 소비 습관의 주인이 되셨어요.' : '6개월 연속 목표 달성!\n이제 돈이를 졸업할 자격이 생겼어요.';
-        box.innerHTML = `<div style="font-size:48px;margin-bottom:12px;">${honorary?'🏆':'🎓'}</div>
-          <div style="font-size:20px;font-weight:700;margin-bottom:8px;">${title}</div>
-          <div style="font-size:14px;color:var(--sub);margin-bottom:24px;line-height:1.6;">${sub}</div>
+        box.innerHTML = `<img src="/doni.gif" alt="돈이" style="width:100px;margin:0 auto 12px;" />
+          <div style="font-size:20px;font-weight:700;margin-bottom:8px;">졸업을 축하해요!</div>
+          <div style="font-size:14px;color:var(--sub);margin-bottom:24px;line-height:1.6;">3개월 연속 목표 달성!<br>이제 돈이를 졸업할 자격이 생겼어요.</div>
           <button id="doni-grad-view-btn" style="width:100%;padding:14px;background:var(--ink);color:var(--bg);border:none;border-radius:50px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;margin-bottom:10px;">졸업장 보기</button>
           <button id="doni-grad-close-btn" style="width:100%;padding:14px;background:transparent;color:var(--sub);border:1px solid var(--line);border-radius:50px;font-size:14px;font-family:inherit;cursor:pointer;">닫기</button>`;
         backdrop.appendChild(box);
         document.body.appendChild(backdrop);
         box.querySelector('#doni-grad-close-btn').onclick = () => backdrop.remove();
         box.querySelector('#doni-grad-view-btn').onclick = () => { backdrop.remove(); showGraduationCert(); };
+        box.querySelector('#doni-grad-view-btn').focus();
       }
 
       // 졸업장 Canvas 생성 + 공유
       function showGraduationCert() {
         const score = getScore();
-        const userName = window._currentUser?.user_metadata?.full_name || window._currentUser?.email || '도니 사용자';
+        if (!score.graduated) return;
+        const userName = '도니 사용자';
         const dateStr = score.graduatedAt ? new Date(score.graduatedAt).toLocaleDateString('ko-KR') : new Date().toLocaleDateString('ko-KR');
-        const streakStr = score.streak;
+        const streakStr = score.graduationStreak || 3;
 
         const canvas = document.createElement('canvas');
         canvas.width = 600; canvas.height = 800;
@@ -750,8 +633,9 @@
           }
           if (!y) { const now = new Date(); y = now.getFullYear(); m = now.getMonth()+1; }
 
-          const key = y+'-'+m;
           const goalAmt = getGoalAmount(y, m);
+          const spent = getMonthSpent(y, m);
+          const key = `${y}-${m}-${goalAmt}-${spent}`;
           if (!goalAmt) {
             document.getElementById('doni-progress-bar-wrap')?.remove();
             lastKey = key;
@@ -762,7 +646,6 @@
 
           document.getElementById('doni-progress-bar-wrap')?.remove();
 
-          const spent = getMonthSpent(y, m);
           const pct = Math.min(100, Math.round(spent / goalAmt * 100));
           const remaining = goalAmt - spent;
 
@@ -899,8 +782,8 @@
                 <button id="doni-goal-amount-save" style="width:100%;padding:13px;border:none;background:var(--ink);color:var(--bg);border-radius:12px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;">저장</button>
                 <div id="doni-goal-amount-msg" style="font-size:12px;color:var(--sub);margin-top:8px;padding-left:4px;"></div>
                 <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
-                  <span style="font-size:12px;color:var(--sub);">6개월 연속 달성 시 졸업장 발급</span>
-                  <span style="font-size:12px;color:var(--sub);">${score.streak}/6</span>
+                  <span style="font-size:12px;color:var(--sub);">3개월 연속 달성 시 졸업장 발급</span>
+                  <span style="font-size:12px;color:var(--sub);">${Math.min(score.streak, 3)}/3</span>
                 </div>`;
 
               // 콤마 포맷 이벤트 (oninput으로 설정 — addEventListener는 탭 재진입 시 중복 누적됨)
@@ -940,6 +823,15 @@
               }
             }
 
+            if (getScore().graduated && !parent.querySelector('#doni-certificate-btn')) {
+              const certBtn = document.createElement('button');
+              certBtn.id = 'doni-certificate-btn';
+              certBtn.textContent = '내 졸업장 보기';
+              certBtn.style.cssText = 'width:100%;padding:14px;margin-bottom:20px;border:1px solid var(--line);border-radius:12px;background:var(--white);color:var(--ink);font:inherit;cursor:pointer;';
+              certBtn.onclick = showGraduationCert;
+              parent.appendChild(certBtn);
+            }
+
             // 전역 style 태그 주입으로 Vue 섹션 숨김
             if (!document.getElementById('doni-settings-hide-style')) {
               const s = document.createElement('style');
@@ -972,7 +864,7 @@
                   startY = now2.getFullYear(); startM = now2.getMonth()+1;
                 }
                 const months = [];
-                for (let i = 0; i < 6; i++) {
+                for (let i = 0; i < 3; i++) {
                   const d = new Date(startY, startM - 1 + i, 1);
                   const y2 = d.getFullYear(), m2 = d.getMonth()+1;
                   const key2 = y2+'-'+m2;
@@ -999,7 +891,7 @@
                 const startLabel = startY+'년 '+startM+'월';
                 histWrap.innerHTML = `<div style="padding:20px;background:var(--white);border-radius:20px;box-shadow:var(--shadow-sm);">
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                    <span style="font-size:14px;font-weight:700;color:var(--ink);">6개월 현황</span>
+                    <span style="font-size:14px;font-weight:700;color:var(--ink);">3개월 현황</span>
                     <div style="display:flex;align-items:center;gap:6px;">
                       <span style="font-size:11px;color:var(--sub);">시작월</span>
                       <input id="doni-start-month-input" type="month" value="${startY}-${String(startM).padStart(2,'0')}"
@@ -1043,7 +935,7 @@
               const setToggleOn = () => {
                 toggleEl.style.background = 'var(--accent,#5B8DEF)';
                 toggleKnob.style.left = '21px';
-                statusEl.textContent = '매일 저녁 8시에 알림을 보내드려요';
+                statusEl.textContent = '매일 저녁 8시 30분에 알림을 보내드려요';
               };
               const setToggleOff = () => {
                 toggleEl.style.background = 'var(--line)';
@@ -1055,7 +947,7 @@
                 const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
                 if (perm === 'granted' && 'serviceWorker' in navigator) {
                   const reg = await navigator.serviceWorker.ready.catch(() => null);
-                  const sub = reg ? await reg.pushManager.getSubscription().catch(() => null) : null;
+                  const sub = reg?.pushManager ? await reg.pushManager.getSubscription().catch(() => null) : null;
                   if (sub && document.getElementById('doni-notif-toggle')) setToggleOn();
                 }
               })();
@@ -1076,16 +968,30 @@
                   const perm = await Notification.requestPermission();
                   if (perm !== 'granted') return;
                 }
+                if (currentPermission === 'unsupported' || !('PushManager' in window) || !('serviceWorker' in navigator)) {
+                  await window.doniAlert('이 브라우저는 알림을 지원하지 않아요.'); return;
+                }
+                if (toggleEl.dataset.busy === 'true') return;
+                toggleEl.dataset.busy = 'true';
                 statusEl.textContent = '등록 중...';
                 try {
                   if (typeof window.subscribePush !== 'function') { throw new Error('알림 준비 중이에요. 잠시 후 다시 시도해줘'); }
-                  await window.subscribePush(true);
-                  setToggleOn();
+                  const reg = await navigator.serviceWorker.ready;
+                  const currentSub = await reg.pushManager.getSubscription();
+                  if (currentSub) {
+                    if (!await currentSub.unsubscribe()) throw new Error('알림을 끄지 못했어요. 다시 시도해주세요.');
+                    localStorage.setItem('doni_push_enabled', 'false');
+                    setToggleOff();
+                  } else {
+                    await window.subscribePush();
+                    localStorage.setItem('doni_push_enabled', 'true');
+                    setToggleOn();
+                  }
                 } catch(e) {
                   setToggleOff();
                   console.error('[doni] push subscribe error', e);
-                  await window.doniAlert('알림 등록 실패: ' + (e && (e.name || e.message) ? ((e.name||'') + ' — ' + (e.message||'')) : String(e)));
-                }
+                  await window.doniAlert('알림 설정 실패: ' + (e && (e.name || e.message) ? ((e.name||'') + ' — ' + (e.message||'')) : String(e)));
+                } finally { toggleEl.dataset.busy = 'false'; }
               };
               const saveBtn = parent.querySelector('.btn-fill');
               if (saveBtn) saveBtn.parentElement.before(notifRow);
@@ -1240,7 +1146,8 @@
       function saveExpense(expense) {
         if (window._doniStore) {
           try {
-            const fullDate = expense.fullDate || new Date().toISOString().slice(0,10);
+            const today = new Date();
+            const fullDate = expense.fullDate || `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
             // 'YYYY-MM-DD'를 new Date()로 넘기면 UTC 자정으로 파싱돼 타임존에 따라 하루 밀림
             const [fy, fm] = fullDate.split('-').map(Number);
             // 오늘 기록이면 현재 시각 자동 기록 (심야 소비 등 시간대 분석용)
@@ -1263,8 +1170,11 @@
             };
             // addExpense는 e.id가 있으면 UPDATE로 처리해 push를 건너뜀
             // 직접 push → Vue reactive 배열 mutation → computed 즉시 무효화
-            window._doniStore.expenses.push(toSave);
-            window._doniStore.saveExpenses();
+            const store = window._doniStore;
+            const records = [...store.expenses, toSave];
+            // Persist first: a storage failure must not leave a phantom record in the UI.
+            localStorage.setItem('doni_exp_v3', JSON.stringify(records));
+            store.expenses.push(toSave);
             return toSave.id;
           } catch(e) { console.error('[doni] save failed', e); }
         }
@@ -1329,7 +1239,7 @@
                 tag: parsed.tag || p.tag,
                 category: parsed.category || p.category,
                 // 이전 입력에 명시된 과거 날짜가 있으면 유지
-                fullDate: (p.fullDate && p.fullDate !== new Date().toISOString().slice(0,10)) ? p.fullDate : parsed.fullDate
+                fullDate: (p.fullDate && p.fullDate !== localDateString()) ? p.fullDate : parsed.fullDate
               };
             }
             injectDoniBubble(parsed, text);
@@ -1412,13 +1322,14 @@
 
           function finishSave(wasteReason) {
             const expense = {
-              fullDate: parsed.fullDate || new Date().toISOString().slice(0,10),
+              fullDate: parsed.fullDate || localDateString(),
               item: parsed.item || '',
               cost: parsed.cost || 0, tag: selectedTag || '',
               category: parsed.category || '',
               customHash: wasteReason || ''
             };
             const savedId = saveExpense(expense);
+            if (!savedId) { window.doniAlert('기록을 저장하지 못했어요. 저장 공간을 확인하고 다시 시도해주세요.'); return; }
             wrap.querySelector('.doni-bot-bubble').innerHTML = '';
             wrap.querySelector('.doni-bot-bubble').style.display = 'none';
             doniAlert('기록됐어!\n오늘도 잘 하고 있어 :)').then(() => {
